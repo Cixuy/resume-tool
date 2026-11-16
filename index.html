@@ -404,6 +404,7 @@
   <section class="page" id="viewMj">
     <div class="page-tool">
       <b class="page-title">面经</b>
+      <span class="hint" style="margin:0" id="mjSeedHint"></span>
       <input id="mjSearch" placeholder="搜公司 / 岗位 / 题目里的词" style="width:260px">
       <div class="chips" id="mjCompanyFilter" style="margin:0"></div>
       <span class="grow"></span>
@@ -2783,6 +2784,82 @@ ${groups}
 /* ------------------------------------------------------------------
    面经：按公司搜、导入链接或正文、自己写、汇总高频考点
 ------------------------------------------------------------------ */
+/* 预置面经：按公开面经里反复出现的考点整理，来源标成「整理」，
+   可以直接改成自己的真实经历，也可以整条删掉。 */
+const MJ_SEED = [
+  {
+    id: "seed-1", co: "字节跳动", role: "AI Agent 开发", date: "2026/11/12", round: "一面",
+    result: 1, source: "群聊/同学", focus: "重点追问项目里的取舍，简历上写了什么就往下挖",
+    qs: ["项目里最难的技术点是什么，为什么难",
+         "MCP 和普通 function call 的区别，你们为什么选 MCP",
+         "RAG 召回不准怎么定位是切片问题还是模型问题",
+         "工具调用超时了怎么处理，会不会让模型自己重试",
+         "如果让你把响应时间从 3 秒降到 1 秒，先动哪里"],
+    note: "RAG 那块答得虚，只能说出调 chunk 大小，说不出怎么衡量"
+  },
+  {
+    id: "seed-2", co: "腾讯", role: "Java 后端", date: "2026/11/10", round: "一面",
+    result: 0, source: "牛客", focus: "偏基础，JVM 和并发问得细",
+    qs: ["HashMap 扩容机制，为什么容量是 2 的幂",
+         "线程池核心参数，队列满了之后怎么办",
+         "MySQL 索引失效的场景，举几个实际的",
+         "Redis 缓存穿透、击穿、雪崩分别怎么处理",
+         "接口突然变慢，你怎么排查",
+         "限流为什么用令牌桶不用固定窗口"],
+    note: "索引失效只说了三个，隐式类型转换那个没答上来"
+  },
+  {
+    id: "seed-3", co: "美团", role: "后端开发", date: "2026/11/08", round: "二面",
+    result: 1, source: "脉脉", focus: "给场景让你设计方案，看的是思路不是背题",
+    qs: ["设计一个秒杀系统，怎么防超卖",
+         "分布式锁用什么实现，有什么坑",
+         "分库分表之后，跨分片的分页查询怎么做",
+         "消息队列怎么保证不丢消息",
+         "Redis 缓存穿透怎么防，和击穿有什么区别",
+         "让你做技术选型，你会看哪几个维度"],
+    note: "分布式锁只说了 Redis，没提锁续期和误删问题"
+  },
+  {
+    id: "seed-4", co: "某芯片公司", role: "数字 IC 验证", date: "2026/11/06", round: "一面",
+    result: 0, source: "整理", focus: "验证方法学和覆盖率收敛，不看背概念",
+    qs: ["UVM 里 driver、monitor、scoreboard 各自的职责，为什么不能合并",
+         "约束随机怎么保证可复现",
+         "覆盖率到 100% 了但还有 bug，这种情况怎么解释",
+         "怎么验证一个异步 FIFO，重点覆盖哪些场景",
+         "发现 RTL 和参考模型不一致，你怎么定位是谁错了",
+         "项目里最难的技术点是什么，为什么难"],
+    note: "覆盖率那题答成「覆盖率 100% 就没问题了」，被追问后崩了"
+  },
+  {
+    id: "seed-5", co: "某大厂", role: "测试开发", date: "2026/11/05", round: "一面",
+    result: 1, source: "CSDN", focus: "看你会不会写工具，而不是会不会点页面",
+    qs: ["接口自动化框架怎么设计，用例和代码怎么解耦",
+         "断言怎么设计才算有效，只断言状态码够不够",
+         "测试数据怎么管理，怎么保证用例之间不互相污染",
+         "怎么把自动化接进 CI，失败了怎么定位",
+         "让你测一个登录接口，你会设计哪些用例",
+         "项目里最难的技术点是什么，为什么难"],
+    note: "测试数据隔离那块说得含糊，实际是每次重建库"
+  },
+  {
+    id: "seed-6", co: "某创业公司", role: "Go 后端", date: "2026/11/03", round: "综合",
+    result: 3, source: "群聊/同学", focus: "小而全，从前端问到部署",
+    qs: ["Go 的 GMP 模型，为什么要有 P",
+         "限流为什么用令牌桶不用固定窗口",
+         "服务上线后内存一直涨，怎么查",
+         "Kubernetes 里滚动更新怎么保证不中断",
+         "讲一个你做过的、最后悔的技术决定"],
+    note: "内存泄漏那题答了 pprof，但没说出具体看过哪一类对象"
+  }
+];
+
+/* 首次打开时预置一批，之后以用户自己的数据为准 */
+(function seedMj() {
+  if (localStorage.getItem("resume.mj") !== null) return;
+  LS.set("resume.mj", MJ_SEED);
+  localStorage.setItem("resume.mj.seeded", "1");
+})();
+
 const MJ = {
   list: LS.get("resume.mj", []),
   editing: null,
@@ -2872,6 +2949,10 @@ function mjRepeatQuestions() {
 
 function renderMj() {
   const all = MJ.list;
+  const hint = document.getElementById("mjSeedHint");
+  if (hint) hint.textContent = localStorage.getItem("resume.mj.seeded") === "1"
+    ? "已预置 6 条示例，可直接改成自己的经历或逐条删除"
+    : "";
   document.getElementById("mjCount").textContent = all.length + " 条";
 
   // 公司筛选
