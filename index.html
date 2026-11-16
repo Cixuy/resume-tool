@@ -126,21 +126,21 @@
   .contact span { margin-right: 12px; }
   .intent { font-size: 10pt; margin-top: 6px; }
   .intent b { font-weight: 600; }
-  .sec { margin-top: 12px; }
+  .sec { margin-top: 10px; }
   .sec-title {
     font-size: 11.5pt; font-weight: 700; letter-spacing: 1px;
     border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 6px;
   }
   .edu-line { display: flex; justify-content: space-between; }
   .muted { color: #444; }
-  .proj-item { margin-bottom: 8px; }
+  .proj-item { margin-bottom: 6px; }
   .proj-title { display: flex; justify-content: space-between; font-weight: 700; font-size: 10.5pt; }
   .proj-title .role { font-weight: 400; color: #444; font-size: 10pt; }
-  .proj-desc { font-size: 9.5pt; color: #333; margin: 2px 0 3px; }
+  .proj-desc { font-size: 9.5pt; color: #333; margin: 1px 0 2px; }
   .proj-url { font-size: 9pt; color: #555; }
   .paper a { color: #1a4fb4; text-decoration: none; }
   ul { margin: 3px 0 0; padding-left: 16px; }
-  li { font-size: 9.8pt; margin-bottom: 2px; line-height: 1.5; }
+  li { font-size: 9.8pt; margin-bottom: 1.5px; line-height: 1.45; }
   li b { font-weight: 600; }
 
   .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
@@ -155,6 +155,7 @@
     .preview-wrap { position: static; }
     .paper { box-shadow: none; width: 210mm; min-height: 297mm; margin: 0; padding: 14mm 16mm; }
     .head-photo { border: none; background: transparent; }
+    .head-photo.empty { display: none; }
     .photo-del { display: none; }
   }
 </style>
@@ -259,6 +260,17 @@ const PROJECTS = [
     tags: ["java", "spring boot", "springboot", "mybatis", "mysql", "vue", "websocket",
            "redis", "权限", "rbac", "jwt", "接口", "restful", "物联网", "实时"],
     stack: "Spring Boot + MyBatis + MySQL + Vue 3",
+    skills: [
+      ["语言", "Java（集合、并发）"],
+      ["框架", "Spring Boot"],
+      ["框架", "Spring Security"],
+      ["框架", "MyBatis"],
+      ["存储", "MySQL（索引与事务）"],
+      ["存储", "Redis（缓存）"],
+      ["系统", "WebSocket（长连接）"],
+      ["工程", "RBAC（权限模型）"],
+      ["工程", "状态机（告警流转）"]
+    ],
     desc: "面向建筑工地的一体化安全管理平台，覆盖设备台账、塔吊与升降机实时监控、AI 视频告警联动与 3D 可视化大屏。",
     bullets: [
       "<b>认证与权限</b>：基于 Spring Security + JWT 实现无状态认证与 RBAC 控制，封装全局拦截器与 ThreadLocal 上下文，用户信息零侵入透传",
@@ -277,6 +289,18 @@ const PROJECTS = [
     tags: ["java", "spring boot", "springboot", "mysql", "redis", "influxdb", "时序",
            "websocket", "ai", "agent", "rag", "大模型", "向量", "milvus", "运维", "监控", "告警"],
     stack: "Spring Boot + Vue 3 + MySQL + InfluxDB + Milvus",
+    skills: [
+      ["语言", "Java"],
+      ["框架", "Spring Boot"],
+      ["存储", "MySQL（分表）"],
+      ["存储", "InfluxDB（Flux 时序聚合）"],
+      ["存储", "Redis"],
+      ["AI", "Milvus（向量检索）"],
+      ["AI", "Embedding"],
+      ["AI", "RAG（Top-K 召回）"],
+      ["AI", "Agent（多 Agent 编排）"],
+      ["系统", "WebSocket（双通道）"]
+    ],
     desc: "面向中小企业的服务器运维平台，集成指标采集、实时监控、告警闭环、自愈规则引擎与 AI 诊断。",
     bullets: [
       "<b>双通道实时推送</b>：WebSocket 拆分前端通道与采集端通道，指标 5 秒级推送、配置变更秒级下发，替代 HTTP 轮询的高延迟与无效请求",
@@ -295,6 +319,18 @@ const PROJECTS = [
     tags: ["java", "spring boot", "springboot", "mysql", "ai", "agent", "mcp", "rag",
            "向量", "记忆", "上下文", "大模型", "工具调用", "vue", "规则引擎", "code review"],
     stack: "Spring Boot 3 + MyBatis + MySQL + Vue 3 + MCP",
+    skills: [
+      ["语言", "Java"],
+      ["框架", "Spring Boot"],
+      ["框架", "MyBatis"],
+      ["AI", "MCP（协议实现）"],
+      ["AI", "Embedding（本地模型）"],
+      ["AI", "向量召回"],
+      ["AI", "上下文裁剪"],
+      ["存储", "MySQL"],
+      ["工程", "双引擎结果合并"],
+      ["工程", "降级容错"]
+    ],
     desc: "把代码评审做成可被外部 AI 客户端调用的服务：双引擎出问题清单，带历史问题检索与项目记忆。",
     bullets: [
       "<b>双引擎合并</b>：C++ 静态分析服务负责正则类规则，Java 规则引擎负责跨行判断，两路结果按「规则 + 行号」去重后统一排序",
@@ -313,6 +349,16 @@ const PROJECTS = [
     tags: ["c++", "cpp", "epoll", "reactor", "网络编程", "socket", "linux", "性能",
            "http", "并发", "系统编程", "静态分析"],
     stack: "C++17 + epoll/WSAPoll + 手写 HTTP",
+    skills: [
+      ["语言", "C++17（RAII、STL、移动语义）"],
+      ["系统", "epoll（Reactor）"],
+      ["系统", "非阻塞 IO"],
+      ["系统", "HTTP（手写解析）"],
+      ["性能", "8070 QPS（单连接）"],
+      ["性能", "p99 0.17ms"],
+      ["工程", "CMake"],
+      ["工程", "跨平台事件抽象"]
+    ],
     desc: "作为代码评审 Agent 的工具后端，承担高频正则扫描与代码指标计算。",
     bullets: [
       "<b>跨平台事件轮询</b>：抽象 Poller 接口，Linux 走 epoll、Windows 走 WSAPoll，上层 Reactor 与平台解耦",
@@ -331,6 +377,15 @@ const PROJECTS = [
     tags: ["go", "golang", "网关", "限流", "熔断", "中间件", "prometheus", "监控",
            "jwt", "鉴权", "反向代理", "微服务", "云原生", "高并发"],
     stack: "Go + net/http + Prometheus",
+    skills: [
+      ["语言", "Go（并发、channel）"],
+      ["服务治理", "限流（令牌桶）"],
+      ["服务治理", "熔断（三态机）"],
+      ["服务治理", "JWT（鉴权）"],
+      ["服务治理", "配置热加载"],
+      ["可观测", "Prometheus（指标）"],
+      ["存储", "Redis"]
+    ],
     desc: "统一收口鉴权、限流、熔断、日志与指标的 HTTP 网关，支持配置热加载。",
     bullets: [
       "<b>限流</b>：按客户端 IP 维护独立令牌桶，后台清理不活跃条目，超限返回 429 并附带 Retry-After",
@@ -348,6 +403,15 @@ const PROJECTS = [
     direction: ["frontend", "backend"],
     tags: ["web", "canvas", "websocket", "redis", "实时", "音频", "前端", "spring boot"],
     stack: "MediaPipe + Web Audio + Canvas + Spring Boot + Redis",
+    skills: [
+      ["前端", "Canvas 2D"],
+      ["前端", "MediaPipe（浏览器内推理）"],
+      ["音频", "Web Audio（ADSR 合成）"],
+      ["系统", "WebSocket（房间）"],
+      ["系统", "Redis（Pub/Sub）"],
+      ["存储", "MySQL"],
+      ["存储", "Redis（ZSET 榜）"]
+    ],
     desc: "浏览器内手部识别驱动发声的互动应用，支持多人同房间合奏。",
     bullets: [
       "<b>浏览器内推理</b>：MediaPipe 手部关键点检测跑在本地 WASM，不依赖云端；检测与渲染解耦，30fps 检测驱动 60fps 画面",
@@ -366,6 +430,14 @@ const PROJECTS = [
     tags: ["python", "测试", "自动化", "接口测试", "pytest", "ci", "持续集成",
            "yaml", "框架", "质量保障", "断言"],
     stack: "Python + requests + PyYAML",
+    skills: [
+      ["语言", "Python"],
+      ["测试", "用例 DSL"],
+      ["测试", "断言体系（8 类）"],
+      ["测试", "HTML/JUnit 报告"],
+      ["测试", "并行与重试"],
+      ["工程", "CI 集成"]
+    ],
     desc: "数据驱动的接口自动化框架：YAML 描述用例，自带执行引擎、断言体系与报告生成。",
     bullets: [
       "<b>用例 DSL</b>：YAML 定义多步骤请求，支持变量插值与跨步骤提取，用例与代码解耦，非开发人员也能改",
@@ -383,6 +455,7 @@ const PROJECTS = [
 const ROLE_PRESETS = [
   {
     id: "java-backend", label: "Java 后端", intent: "Java 后端开发工程师",
+    order: ["语言","框架","存储","系统","AI","工程"],
     projects: ["code-review-agent", "serverops", "smart-site"],
     skills: [
       "<b>语言与基础</b>：Java（集合、并发、JVM 内存模型）、SQL；掌握常用设计模式",
@@ -393,6 +466,7 @@ const ROLE_PRESETS = [
   },
   {
     id: "ai-agent", label: "AI Agent", intent: "AI Agent 应用开发工程师",
+    order: ["语言","AI","框架","存储","工程","系统"],
     projects: ["code-review-agent", "serverops", "cpp-code-insight"],
     skills: [
       "<b>Agent 开发</b>：MCP 协议工具暴露、多 Agent 编排（Planner-Executor-Supervisor）、工具调用与降级策略",
@@ -403,6 +477,7 @@ const ROLE_PRESETS = [
   },
   {
     id: "cpp-systems", label: "C++ 工程师", intent: "C++ 后端 / 系统开发工程师",
+    order: ["语言","系统","性能","工程","存储","框架"],
     projects: ["cpp-code-insight", "code-review-agent", "go-gateway"],
     skills: [
       "<b>语言</b>：C++17（RAII、STL、移动语义）、Java、Go；熟悉 Linux 开发环境",
@@ -413,6 +488,7 @@ const ROLE_PRESETS = [
   },
   {
     id: "server-ops", label: "服务器工程师", intent: "服务器开发 / 运维开发工程师",
+    order: ["语言","服务治理","可观测","存储","系统","工程"],
     projects: ["serverops", "go-gateway", "cpp-code-insight"],
     skills: [
       "<b>可观测性</b>：指标采集与存储（InfluxDB 时序、Prometheus 指标）、告警闭环、日志分表",
@@ -423,6 +499,7 @@ const ROLE_PRESETS = [
   },
   {
     id: "test-dev", label: "测试开发", intent: "测试开发工程师",
+    order: ["语言","测试","工程","框架","存储"],
     projects: ["api-testkit", "code-review-agent", "serverops"],
     skills: [
       "<b>测试框架</b>：接口自动化框架设计（用例 DSL、断言体系、报告生成）、数据驱动、并行执行",
@@ -433,6 +510,7 @@ const ROLE_PRESETS = [
   },
   {
     id: "go-cloud", label: "Go 云原生", intent: "Go 服务端开发工程师",
+    order: ["语言","服务治理","可观测","系统","存储","工程"],
     projects: ["go-gateway", "gesture-music", "cpp-code-insight"],
     skills: [
       "<b>语言</b>：Go（并发模型、channel、context）、Java、C++ 基础",
@@ -442,6 +520,64 @@ const ROLE_PRESETS = [
     ]
   }
 ];
+
+
+/* ------------------------------------------------------------------
+   技能汇总：按选中项目聚合，保证"项目里写的东西"和"技能里写的东西"一致
+------------------------------------------------------------------ */
+const SKILL_ORDER = ["语言", "框架", "存储", "系统", "服务治理", "可观测",
+                     "AI", "前端", "音频", "性能", "测试", "工程"];
+const SKILL_LABEL = {
+  "语言": "语言与基础", "框架": "框架与中间件", "存储": "存储与缓存",
+  "系统": "系统与网络", "服务治理": "服务治理", "可观测": "可观测性",
+  "AI": "AI 与 Agent", "前端": "前端与交互", "音频": "音频处理",
+  "性能": "性能优化", "测试": "测试与质量", "工程": "工程与工具"
+};
+
+// 技术名与括号里的说明分开：同名技术合并说明，避免"Java"和"Java（并发）"重复出现
+function techBase(text) {
+  return text.split(/[（(]/)[0].trim();
+}
+function techDetail(text) {
+  const m = text.match(/[（(]([^）)]+)[）)]/);
+  return m ? m[1].trim() : "";
+}
+
+function composeSkills(projectIds, order) {
+  const seq = order && order.length ? order : SKILL_ORDER;
+  const picked = projectIds
+    .map(id => PROJECTS.find(p => p.id === id))
+    .filter(p => p && Array.isArray(p.skills));
+  if (!picked.length) return [];
+
+  // 按"技术名"去重：Java 与 Java（集合、并发）算同一个，
+  // Spring Boot 与 Spring Boot 3 也算同一个，保留信息量最大的那条
+  const bucket = new Map();   // 分类 -> Map<技术名, 描述>
+  for (const proj of picked) {
+    for (const [cat, text] of proj.skills) {
+      if (!bucket.has(cat)) bucket.set(cat, new Map());
+      const m = bucket.get(cat);
+      const key = techBase(text);
+      const old = m.get(key) || { detail: [] };
+      const detail = techDetail(text);
+      if (detail && !old.detail.includes(detail)) old.detail.push(detail);
+      m.set(key, { name: key, detail: old.detail });
+    }
+  }
+
+  const lines = [];
+  for (const cat of seq) {
+    const items = bucket.get(cat);
+    if (!items || !items.size) continue;
+    let joined = [...items.values()]
+      .map(it => it.detail.length ? `${it.name}（${it.detail.join("、")}）` : it.name)
+      .join("、");
+    if (joined.length > 88) joined = joined.slice(0, 86) + "…";
+    lines.push(`<b>${SKILL_LABEL[cat] || cat}</b>：${joined}`);
+    if (lines.length >= 4) break;
+  }
+  return lines;
+}
 
 /* 岗位方向词表：用于把 JD 归到某个方向，影响排序权重 */
 const DIRECTIONS = {
@@ -533,11 +669,16 @@ function applyRole(roleId) {
   if (!role) return;
   state.roleId = roleId;
   state.selected = role.projects.filter(id => PROJECTS.some(p => p.id === id));
-  state.skills = role.skills;
+  state.skills = composeSkills(state.selected, currentOrder());
   document.getElementById("fIntent").value = role.intent;
   renderRoles();
   renderProjects();
   renderPaper();
+}
+
+function currentOrder() {
+  const r = ROLE_PRESETS.find(x => x.id === state.roleId);
+  return r && r.order ? r.order : null;
 }
 
 function renderRoles() {
@@ -559,6 +700,7 @@ function toggle(id) {
     if (state.selected.length >= 3) state.selected.shift();
     state.selected.push(id);
   }
+  state.skills = composeSkills(state.selected, currentOrder());
   renderProjects();
   renderPaper();
 }
@@ -607,7 +749,7 @@ function renderPaper() {
         </div>
         <div class="intent"><b>求职意向：</b>${f.intent || "（求职意向）"}</div>
       </div>
-      <div class="head-photo" id="photoSlot">
+      <div class="head-photo${state.photo ? '' : ' empty'}" id="photoSlot">
         ${state.photo
           ? `<img src="${state.photo}" alt="照片">
              <button class="photo-del" id="photoDel" title="移除">×</button>`
@@ -735,6 +877,7 @@ function autoPickIfEmpty() {
                          .slice(0, 2)
                          .map(x => x.p.id);
   state.selected = ranked;
+  state.skills = composeSkills(state.selected);
 }
 
 document.getElementById("btnSample").onclick = () => {
