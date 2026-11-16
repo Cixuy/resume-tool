@@ -901,6 +901,50 @@ const PROJECTS = [
     ]
   },
   {
+    id: "micro-infer",
+    url: "https://github.com/Cixuy/micro-infer",
+    name: "端侧推理引擎内核",
+    role: "独立开发", period: "2026/11 - 2026/11",
+    direction: ["cpp", "chip"], distinct: 1.0,
+    tags: ["c++", "推理引擎", "算子", "卷积", "conv", "量化", "int8", "内存复用",
+           "性能", "gflops", "nhwc", "算子融合", "端侧", "推理", "芯片", "runtime"],
+    stack: "C++17 + 手写算子 + NHWC + 图优化 + 性能度量",
+    skills: [
+      ["语言", "C++17（模板、RAII）"], ["系统", "NHWC 内存布局"],
+      ["性能", "conv 算子（im2col 思路）"], ["性能", "5.6 GFLOPS（单核）"],
+      ["性能", "算子融合与缓冲复用"], ["工程", "逐层耗时与 MACs 统计"]
+    ],
+    desc: "面向端侧的推理内核：手写卷积/池化/全连接算子，做 conv+relu 融合与内存复用，并把耗时与显存量化出来。",
+    bullets: [
+      "<b>算子与布局</b>：NHWC 布局下手写 conv3x3、maxpool、GAP、fc，无第三方依赖；同一份权重可与 numpy 参考实现逐元素对拍",
+      "<b>图优化</b>：conv+relu 融合省掉一次完整遍历，中间张量改用两块缓冲乒乓复用，峰值显存从 3970.8KB 降到 1090.3KB（-72%）",
+      "<b>性能度量</b>：逐层计时 + MACs 统计，单核 54.75 MFLOPs 跑到 5.6 GFLOPS；10 次重复取均值，避免单次抖动误导结论",
+      "<b>一个反直觉结论</b>：融合只带来 0.5-3% 的耗时收益——该模型 conv 占 94% 时间属计算密集，融合真正省的是带宽与显存，不是算力"
+    ]
+  },
+  {
+    id: "fifo-dv",
+    url: "https://github.com/Cixuy/fifo-dv",
+    name: "数字 IP 验证平台（mini DV）",
+    role: "独立开发", period: "2026/11 - 2026/11",
+    direction: ["chip", "test", "cpp"], distinct: 1.0,
+    tags: ["验证", "dv", "uvm", "覆盖率", "scoreboard", "约束随机", "波形", "数字前端",
+           "芯片", "ip 验证", "rtl", "仿真", "c++", "fifo"],
+    stack: "C++17 + 约束随机 + 参考模型 + 功能覆盖率",
+    skills: [
+      ["语言", "C++17"], ["测试", "约束随机激励（CRV）"],
+      ["测试", "参考模型与 scoreboard"], ["测试", "功能覆盖率（17 个覆盖点）"],
+      ["测试", "错误注入与回归"], ["工程", "波形与报告可视化"]
+    ],
+    desc: "不依赖 EDA 的 mini DV 平台：被测逻辑是同步 FIFO，按 UVM 分层复现生成器、驱动器、参考模型、scoreboard 与覆盖率。",
+    bullets: [
+      "<b>验证分层</b>：约束随机生成器 → driver → DUT → 参考模型 → scoreboard，逐拍比对数据、full/empty 标志与水位三者，参考模型独立实现避免同源错误",
+      "<b>覆盖率驱动</b>：17 个覆盖点含交叉与边界（满写、空读、背靠背、指针回绕）；随机 20000 拍达 94.1%，唯一缺口是被约束排除的空读场景，补 3 个定向用例后到 100%",
+      "<b>平台有效性</b>：注入「满写不忽略」的 bug，3000 拍内第 95 拍即被 scoreboard 捕获（cnt=9 超过 depth=8），共报出 2819 处失配",
+      "<b>可视化</b>：导出逐拍信号生成单文件报告，含波形（失配拍标红）、水位曲线与覆盖率网格，鼠标悬停可看该拍全部信号"
+    ]
+  },
+  {
     id: "serverops",
     url: "https://github.com/Cixuy/serverops",
     name: "ServerOps 服务器智能运维平台",
@@ -957,6 +1001,7 @@ const DIR_ORDER = {
   backend:  ["语言", "框架", "存储", "系统", "AI", "工程"],
   go:       ["语言", "服务治理", "可观测", "系统", "存储", "工程"],
   ops:      ["语言", "服务治理", "可观测", "存储", "系统", "工程"],
+  chip:     ["语言", "测试", "性能", "系统", "工程", "存储"],
   cpp:      ["语言", "系统", "性能", "工程", "存储", "框架"],
   test:     ["语言", "测试", "工程", "框架", "存储"],
   frontend: ["语言", "前端", "框架", "工程", "存储"]
@@ -973,7 +1018,9 @@ const DIRECTIONS = {
   cpp: ["c++", "cpp", "linux", "底层", "网络编程", "内核", "嵌入式", "驱动"],
   test: ["测试", "自动化", "质量", "qa", "sdet", "用例", "接口测试"],
   frontend: ["vue", "react", "前端", "javascript", "typescript", "canvas"],
-  ops: ["运维", "sre", "devops", "服务器", "监控", "告警", "巡检", "可观测", "故障", "自愈", "发布部署"]
+  ops: ["运维", "sre", "devops", "服务器", "监控", "告警", "巡检", "可观测", "故障", "自愈", "发布部署"],
+  chip: ["芯片", "数字前端", "验证", "覆盖率", "uvm", "rtl", "fpga", "soc", "npu", "gpu",
+         "算子", "推理引擎", "量化", "流水线", "时序", "硬件", "硅", "版图"]
 };
 
 const SKILL_LABEL = {
@@ -1067,6 +1114,7 @@ function inferIntent(text) {
   const t = (text || "").toLowerCase();
   const rules = [
     { keys: ["测试开发", "sdet", "自动化测试"], title: "测试开发工程师" },
+    { keys: ["验证", "uvm", "覆盖率", "数字前端", "rtl", "数字 ic"], title: "数字 IC 验证工程师" },
     { keys: ["ai agent", "智能体", "大模型应用", "llm 应用", "rag"], title: "AI Agent 应用开发工程师" },
     { keys: ["c++", "cpp"], title: "C++ 后端 / 系统开发工程师" },
     { keys: ["go", "golang"], title: "Go 服务端开发工程师" },
@@ -2014,7 +2062,7 @@ function renderJdChips() {
   const box = document.getElementById("jdChips");
   box.innerHTML = "";
   const labels = { ai: "AI/Agent", backend: "后端", go: "Go/云原生",
-                   cpp: "C++/底层", test: "测试", frontend: "前端", ops: "运维/服务器" };
+                   cpp: "C++/底层", test: "测试", frontend: "前端", ops: "运维/服务器", chip: "芯片/验证" };
   let any = false;
   for (const [dir, n] of Object.entries(state.analysis.dirScore || {})) {
     if (!n) continue;
