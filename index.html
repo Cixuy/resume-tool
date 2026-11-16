@@ -3,90 +3,59 @@
 <head>
 <meta charset="utf-8">
 <title>简历编排工具</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%2322303C'/><rect x='8' y='10' width='16' height='3' rx='1.5' fill='%23F3EFE6'/><rect x='8' y='16' width='11' height='3' rx='1.5' fill='%23F3EFE6'/><rect x='8' y='22' width='7' height='3' rx='1.5' fill='%23F3EFE6'/></svg>">
 <style>
   :root {
-    --ink: #1f2329;
-    --muted: #6b7280;
-    --line: #e5e6eb;
-    --accent: #2563eb;
-    --panel: #ffffff;
-    --bg: #f4f5f7;
+    --ink: #1f2329; --muted: #6b7280; --line: #e5e6eb;
+    --accent: #2563eb; --panel: #fff; --bg: #f4f5f7;
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-  }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+         background: var(--bg); color: var(--ink); }
 
-  /* 顶部工具条 */
-  .topbar {
-    position: sticky; top: 0; z-index: 20;
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 16px; padding: 12px 24px;
-    background: #fff; border-bottom: 1px solid var(--line);
-  }
+  .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center;
+            justify-content: space-between; gap: 16px; padding: 12px 24px;
+            background: #fff; border-bottom: 1px solid var(--line); }
   .brand { display: flex; align-items: baseline; gap: 10px; }
   .brand h1 { font-size: 16px; margin: 0; font-weight: 600; }
   .brand span { font-size: 12px; color: var(--muted); }
   .actions { display: flex; gap: 8px; }
-  button {
-    font-family: inherit; font-size: 13px; padding: 7px 14px;
-    border-radius: 6px; border: 1px solid var(--line); background: #fff;
-    color: var(--ink); cursor: pointer;
-  }
+  button { font-family: inherit; font-size: 13px; padding: 7px 14px; border-radius: 6px;
+           border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
   button:hover { border-color: #c9cdd4; }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button.primary:hover { background: #1d4ed8; }
+  button.mini { padding: 5px 10px; font-size: 12px; }
 
-  /* 主体两栏 */
-  .layout {
-    display: grid; grid-template-columns: 420px 1fr;
-    gap: 20px; padding: 20px 24px 60px; align-items: start;
-  }
-  .panel {
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; padding: 16px;
-  }
+  .layout { display: grid; grid-template-columns: 400px 1fr; gap: 20px;
+            padding: 20px 24px 60px; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
   .panel + .panel { margin-top: 16px; }
-  .panel h2 {
-    font-size: 13px; margin: 0 0 10px; font-weight: 600;
-    display: flex; align-items: center; justify-content: space-between;
-  }
+  .panel h2 { font-size: 13px; margin: 0 0 10px; font-weight: 600;
+              display: flex; align-items: center; justify-content: space-between; }
   .panel h2 em { font-style: normal; font-weight: 400; color: var(--muted); font-size: 12px; }
 
   label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
-  input[type=text], textarea, select {
+  input[type=text], input[type=password], textarea, select {
     width: 100%; font-family: inherit; font-size: 13px; color: var(--ink);
-    border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
-    background: #fff;
-  }
+    border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; }
   textarea { resize: vertical; line-height: 1.6; }
   input:focus, textarea:focus { outline: 2px solid #dbeafe; border-color: var(--accent); }
-
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
   .roles { display: flex; flex-wrap: wrap; gap: 6px; }
-  .role {
-    font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer;
-    border: 1px solid var(--line); background: #fff; color: #4e5969;
-  }
-  .role:hover { border-color: #c9cdd4; }
-  .role.on { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .role-btn { font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+              border: 1px solid var(--line); background: #fff; color: #4e5969; }
+  .role-btn:hover { border-color: #c9cdd4; }
+  .role-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .chip {
-    font-size: 11px; padding: 3px 8px; border-radius: 4px;
-    background: #eef2ff; color: #3730a3; border: 1px solid #e0e7ff;
-  }
+  .chip { font-size: 11px; padding: 3px 8px; border-radius: 4px;
+          background: #eef2ff; color: #3730a3; border: 1px solid #e0e7ff; }
   .chip.hit { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
 
-  /* 项目推荐列表 */
-  .proj {
-    border: 1px solid var(--line); border-radius: 8px;
-    padding: 10px 12px; margin-bottom: 8px; cursor: pointer;
-    transition: border-color .15s, background .15s;
-  }
+  .proj { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+          margin-bottom: 8px; cursor: pointer; }
   .proj:hover { border-color: #c9cdd4; }
   .proj.on { border-color: var(--accent); background: #f8faff; }
   .proj-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -95,71 +64,62 @@
   .score b { color: var(--accent); font-size: 13px; }
   .proj-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
   .proj-why { font-size: 11px; color: #166534; margin-top: 4px; line-height: 1.6; }
+  .proj-ai { font-size: 11px; color: #1d4ed8; margin-top: 4px; line-height: 1.6; }
 
-  /* 简历预览：A4 */
   .preview-wrap { position: sticky; top: 78px; }
-  .paper {
-    width: 794px; min-height: 1123px; margin: 0 auto;
-    background: #fff; padding: 42px 48px;
-    box-shadow: 0 4px 18px rgba(0,0,0,.08);
-    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-    color: #1a1a1a; font-size: 10.5pt; line-height: 1.55;
-  }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
-  .head-main { flex: 1; min-width: 0; }
-  .head-photo {
-    width: 84px; height: 108px; flex: none; border-radius: 4px;
-    border: 1px dashed #c9cdd4; display: grid; place-items: center;
-    cursor: pointer; overflow: hidden; position: relative;
-    font-size: 9pt; color: #9aa0a6; text-align: center; line-height: 1.4;
-    background: #fafafa;
-  }
-  .head-photo:hover { border-color: #2563eb; color: #2563eb; }
+  .paper { width: 794px; min-height: 1123px; margin: 0 auto; background: #fff;
+           padding: 34px 44px; box-shadow: 0 4px 18px rgba(0,0,0,.08);
+           font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+           color: #1a1a1a; font-size: 10.5pt; line-height: 1.55; }
+
+  .head { overflow: hidden; }
+  .head-photo { float: right; width: 84px; height: 108px; margin-left: 14px;
+                border: 1px dashed #c9cdd4; border-radius: 4px; display: grid;
+                place-items: center; cursor: pointer; overflow: hidden; position: relative;
+                font-size: 9pt; color: #9aa0a6; text-align: center; line-height: 1.4; background: #fafafa; }
+  .head-photo:hover { border-color: var(--accent); color: var(--accent); }
   .head-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .photo-del {
-    position: absolute; top: 1px; right: 1px; width: 16px; height: 16px;
-    padding: 0; font-size: 12px; line-height: 14px; border-radius: 3px;
-    border: none; background: rgba(0,0,0,.45); color: #fff; cursor: pointer;
-  }
+  .photo-del { position: absolute; top: 1px; right: 1px; width: 16px; height: 16px;
+               padding: 0; font-size: 12px; line-height: 14px; border-radius: 3px;
+               border: none; background: rgba(0,0,0,.45); color: #fff; cursor: pointer; }
+
   .paper h1 { font-size: 22pt; margin: 0 0 2px; letter-spacing: 2px; }
   .contact { font-size: 9pt; color: #444; }
   .contact span { margin-right: 12px; }
   .intent { font-size: 10pt; margin-top: 6px; }
-  .intent b { font-weight: 600; }
   .sec { margin-top: 10px; }
-  .sec-title {
-    font-size: 11.5pt; font-weight: 700; letter-spacing: 1px;
-    border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 6px;
-  }
+  .sec-title { font-size: 11.5pt; font-weight: 700; letter-spacing: 1px;
+               border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 6px; }
   .edu-line, .proj-title { overflow: hidden; }
-  .edu-line .date, .proj-title .date {
-    float: right; font-weight: 400; font-size: 10pt; color: #333;
-  }
+  .edu-line .date, .proj-title .date { float: right; font-weight: 400; font-size: 10pt; color: #333; }
   .muted { color: #444; }
   .proj-item { margin-bottom: 6px; }
   .proj-title { font-weight: 700; font-size: 10.5pt; margin-top: 2px; }
   .proj-title .role { font-weight: 400; color: #555; font-size: 10pt; }
   .proj-desc { font-size: 9.5pt; color: #333; margin: 1px 0 2px; }
   .proj-url { font-size: 9pt; color: #555; }
-  .paper a { color: #1a4fb4; text-decoration: none; }
   ul { margin: 3px 0 0; padding-left: 16px; }
   li { font-size: 9.8pt; margin-bottom: 1.5px; line-height: 1.45; }
   li b { font-weight: 600; }
 
-  .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
-  .hidden { display: none !important; }
+  [contenteditable="true"] { outline: none; border-radius: 3px; }
+  [contenteditable="true"]:hover { background: #f6f8ff; box-shadow: 0 0 0 1px #dbeafe inset; }
+  [contenteditable="true"]:focus { background: #fff; box-shadow: 0 0 0 1px var(--accent) inset; }
 
-  /* 打印：只留 A4 */
+  .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
+  .warn { color: #b45309; }
+
   @media print {
     @page { size: A4; margin: 0; }
     body { background: #fff; }
-    .topbar, .layout > .left, .preview-wrap > .panel-hint { display: none !important; }
+    .topbar, .layout > .left { display: none !important; }
     .layout { display: block; padding: 0; }
     .preview-wrap { position: static; }
-    .paper { box-shadow: none; width: 210mm; min-height: 297mm; margin: 0; padding: 14mm 16mm; }
+    .paper { box-shadow: none; width: 210mm; min-height: 0; margin: 0; padding: 12mm 15mm; }
     .head-photo { border: none; background: transparent; }
     .head-photo.empty { display: none; }
     .photo-del { display: none; }
+    [contenteditable="true"]:hover, [contenteditable="true"]:focus { background: transparent; box-shadow: none; }
   }
 </style>
 </head>
@@ -168,27 +128,26 @@
 <div class="topbar">
   <div class="brand">
     <h1>简历编排工具</h1>
-    <span id="statusText">粘贴 JD 后自动推荐项目</span>
+    <span id="statusText">左侧粘 JD，右侧直接编辑</span>
   </div>
   <div class="actions">
-    <button id="btnSample">填入示例 JD</button>
+    <button id="btnSample" class="mini">示例 JD</button>
+    <button id="btnAi" class="mini">AI 分析</button>
     <button id="btnWord">导出 Word</button>
     <button id="btnPdf" class="primary">导出 PDF</button>
   </div>
 </div>
 
 <div class="layout">
-  <!-- 左栏：输入与选择 -->
   <div class="left">
     <div class="panel">
       <h2>岗位预设 <em>点击套用</em></h2>
       <div class="roles" id="roleList"></div>
-      <div class="hint" style="margin-top:8px">套用后会切换项目组合、求职意向与技能排序，之后再贴 JD 做微调。</div>
     </div>
 
     <div class="panel">
       <h2>目标岗位 JD <em>粘贴后自动分析</em></h2>
-      <textarea id="jd" rows="9" placeholder="把招聘要求整段粘进来，例如：&#10;1. 熟悉 Java 基础，掌握 Spring Boot、MyBatis；&#10;2. 熟悉 MySQL、Redis，了解消息队列；&#10;3. 有 AI Agent、RAG 相关经验优先"></textarea>
+      <textarea id="jd" rows="8" placeholder="把招聘要求整段粘进来"></textarea>
       <div class="chips" id="jdChips"></div>
     </div>
 
@@ -201,26 +160,32 @@
     </div>
 
     <div class="panel">
-      <h2>基本信息</h2>
-      <div class="row2">
-        <div><label>姓名</label><input type="text" id="fName" placeholder="你的姓名"></div>
-        <div><label>出生年月</label><input type="text" id="fBirth" placeholder="2000/01"></div>
+      <h2>AI 分析 <em id="aiState">未配置</em></h2>
+      <div class="hint">
+        配置一个 OpenAI 兼容接口，可以让模型判断哪个项目更贴合 JD。
+        不配置也能用，走关键词打分。
       </div>
+      <label>接口地址</label>
+      <input type="text" id="aiBase" placeholder="https://api.deepseek.com/v1">
       <div class="row2">
-        <div><label>手机</label><input type="text" id="fPhone" placeholder="13800000000"></div>
-        <div><label>邮箱</label><input type="text" id="fMail" placeholder="you@example.com"></div>
+        <div><label>模型</label><input type="text" id="aiModel" placeholder="deepseek-chat"></div>
+        <div><label>密钥</label><input type="password" id="aiKey" placeholder="sk-..."></div>
       </div>
-      <label>个人主页</label>
-      <input type="text" id="fHome" placeholder="your-site.github.io">
-      <label>求职意向</label>
-      <input type="text" id="fIntent" placeholder="Java 后端开发">
+      <div style="display:flex; gap:8px; margin-top:10px">
+        <button class="mini" id="btnAiRun">用 AI 重新打分</button>
+        <button class="mini" id="btnAiClear">清除配置</button>
+      </div>
+      <div class="hint" id="aiMsg" style="margin-top:8px"></div>
+      <div class="hint warn" style="margin-top:8px">
+        密钥只存在这台浏览器的 localStorage，不随页面或仓库上传。
+        若接口不允许跨域，浏览器会拦截，此时仍可用关键词打分。
+      </div>
     </div>
   </div>
 
-  <!-- 右栏：预览 -->
   <div class="preview-wrap">
-    <div class="panel-hint hint" style="text-align:center;margin-bottom:8px">
-      下面是导出效果预览，A4 单页
+    <div class="hint" style="text-align:center;margin-bottom:8px">
+      右侧内容可直接点击修改，改动自动保存在本地
     </div>
     <div class="paper" id="paper"></div>
   </div>
@@ -229,110 +194,37 @@
 <script src="profile.js" onerror="void 0"></script>
 <script>
 /* ------------------------------------------------------------------
-   基础信息
+   个人信息：profile.js 覆盖，仓库里只有占位
 ------------------------------------------------------------------ */
-const PROFILE = {
-  name: "（姓名）",
-  birth: "（出生年月）",
-  phone: "（手机）",
-  mail: "（邮箱）",
-  home: "（个人主页）",
-  intent: "Java 后端开发",
+const PROFILE = Object.assign({
+  name: "（姓名）", birth: "（出生年月）", phone: "（手机）",
+  mail: "（邮箱）", home: "（个人主页）", intent: "Java 后端开发",
   edu: {
-    school: "（学校）",
-    major: "（专业）",
-    degree: "本科",
-    period: "20xx/09 - 20xx/07",
-    courses: "（主修课程）"
+    school: "（学校）", major: "（专业）", degree: "本科",
+    period: "20xx/09 - 20xx/07", courses: "（主修课程）"
   },
-  extra: "（其他补充，如语言证书）"
-};
+  extra: "（其他补充）"
+}, window.PROFILE_OVERRIDE || {});
 
 /* ------------------------------------------------------------------
-   项目库：每个项目带标签（用于与 JD 匹配）与简历用的条目
-   tags 越具体越好，匹配时按命中数量加权
+   项目库
+   distinct：项目稀缺度。大众题（人人都在做的管理系统）给低分，
+   命中相同数量关键词时排在更独特的项目之后。
 ------------------------------------------------------------------ */
 const PROJECTS = [
-  {
-    id: "smart-site",
-    url: "https://github.com/Cixuy/smart-site",
-    name: "智慧工地安全智能监控平台",
-    role: "核心开发",
-    period: "2026/02 - 2026/04",
-    direction: ["backend", "frontend"],
-    tags: ["java", "spring boot", "springboot", "mybatis", "mysql", "vue", "websocket",
-           "redis", "权限", "rbac", "jwt", "接口", "restful", "物联网", "实时"],
-    stack: "Spring Boot + MyBatis + MySQL + Vue 3",
-    skills: [
-      ["语言", "Java（集合、并发）"],
-      ["框架", "Spring Boot"],
-      ["框架", "Spring Security"],
-      ["框架", "MyBatis"],
-      ["存储", "MySQL（索引与事务）"],
-      ["存储", "Redis（缓存）"],
-      ["系统", "WebSocket（长连接）"],
-      ["工程", "RBAC（权限模型）"],
-      ["工程", "状态机（告警流转）"]
-    ],
-    desc: "面向建筑工地的一体化安全管理平台，覆盖设备台账、塔吊与升降机实时监控、AI 视频告警联动与 3D 可视化大屏。",
-    bullets: [
-      "<b>认证与权限</b>：基于 Spring Security + JWT 实现无状态认证与 RBAC 控制，封装全局拦截器与 ThreadLocal 上下文，用户信息零侵入透传",
-      "<b>实时推送</b>：用 WebSocket 推送塔吊运行参数、环境指标与告警截图，替代 HTTP 轮询，监控数据延迟从秒级降到毫秒级",
-      "<b>缓存治理</b>：Redis 缓存高频设备信息，配合线程池与 Redisson 逻辑过期解决缓存击穿，随机 TTL 规避雪崩",
-      "<b>告警闭环</b>：设计「生成 → 推送 → 接单 → 处置 → 恢复」状态机，用状态流转约束非法操作"
-    ]
-  },
-  {
-    id: "serverops",
-    url: "https://github.com/Cixuy/serverops",
-    name: "ServerOps 服务器智能运维平台",
-    role: "核心开发",
-    period: "2026/07 - 2026/08",
-    direction: ["backend", "ai"],
-    tags: ["java", "spring boot", "springboot", "mysql", "redis", "influxdb", "时序",
-           "websocket", "ai", "agent", "rag", "大模型", "向量", "milvus", "运维", "监控", "告警"],
-    stack: "Spring Boot + Vue 3 + MySQL + InfluxDB + Milvus",
-    skills: [
-      ["语言", "Java"],
-      ["框架", "Spring Boot"],
-      ["存储", "MySQL（分表）"],
-      ["存储", "InfluxDB（Flux 时序聚合）"],
-      ["存储", "Redis"],
-      ["AI", "Milvus（向量检索）"],
-      ["AI", "Embedding"],
-      ["AI", "RAG（Top-K 召回）"],
-      ["AI", "Agent（多 Agent 编排）"],
-      ["系统", "WebSocket（双通道）"]
-    ],
-    desc: "面向中小企业的服务器运维平台，集成指标采集、实时监控、告警闭环、自愈规则引擎与 AI 诊断。",
-    bullets: [
-      "<b>双通道实时推送</b>：WebSocket 拆分前端通道与采集端通道，指标 5 秒级推送、配置变更秒级下发，替代 HTTP 轮询的高延迟与无效请求",
-      "<b>存储分层</b>：MySQL 存业务数据并对操作日志分表，InfluxDB 存时序指标，用 Flux 做多时间窗聚合，避免单表膨胀拖慢查询",
-      "<b>RAG 链路</b>：Milvus + Embedding 构建运维知识库，实现故障手册切片入库与 Top-K 召回，支撑告警场景的语义检索问答",
-      "<b>多 Agent 编排</b>：基于 Planner-Executor-Supervisor 流程把告警内容与检索上下文拼接，生成结构化诊断报告"
-    ]
-  },
   {
     id: "code-review-agent",
     url: "https://github.com/Cixuy/code-review-agent",
     name: "代码评审智能体（Code Review Agent）",
-    role: "独立开发",
-    period: "2026/09 - 2026/10",
-    direction: ["ai", "backend"],
+    role: "独立开发", period: "2026/09 - 2026/10",
+    direction: ["ai", "backend"], distinct: 1.0,
     tags: ["java", "spring boot", "springboot", "mysql", "ai", "agent", "mcp", "rag",
            "向量", "记忆", "上下文", "大模型", "工具调用", "vue", "规则引擎", "code review"],
     stack: "Spring Boot 3 + MyBatis + MySQL + Vue 3 + MCP",
     skills: [
-      ["语言", "Java"],
-      ["框架", "Spring Boot"],
-      ["框架", "MyBatis"],
-      ["AI", "MCP（协议实现）"],
-      ["AI", "Embedding（本地模型）"],
-      ["AI", "向量召回"],
-      ["AI", "上下文裁剪"],
-      ["存储", "MySQL"],
-      ["工程", "双引擎结果合并"],
-      ["工程", "降级容错"]
+      ["语言", "Java"], ["框架", "Spring Boot"], ["框架", "MyBatis"],
+      ["AI", "MCP（协议实现）"], ["AI", "Embedding（本地模型）"], ["AI", "向量召回"],
+      ["AI", "上下文裁剪"], ["存储", "MySQL"], ["工程", "双引擎结果合并"], ["工程", "降级容错"]
     ],
     desc: "把代码评审做成可被外部 AI 客户端调用的服务：双引擎出问题清单，带历史问题检索与项目记忆。",
     bullets: [
@@ -346,21 +238,16 @@ const PROJECTS = [
     id: "cpp-code-insight",
     url: "https://github.com/Cixuy/cpp-code-insight",
     name: "C++ 代码静态分析服务",
-    role: "独立开发",
-    period: "2026/09 - 2026/10",
-    direction: ["cpp", "backend"],
+    role: "独立开发", period: "2026/09 - 2026/10",
+    direction: ["cpp", "backend"], distinct: 1.0,
     tags: ["c++", "cpp", "epoll", "reactor", "网络编程", "socket", "linux", "性能",
-           "http", "并发", "系统编程", "静态分析"],
+           "http", "并发", "系统编程", "静态分析", "底层"],
     stack: "C++17 + epoll/WSAPoll + 手写 HTTP",
     skills: [
-      ["语言", "C++17（RAII、STL、移动语义）"],
-      ["系统", "epoll（Reactor）"],
-      ["系统", "非阻塞 IO"],
-      ["系统", "HTTP（手写解析）"],
-      ["性能", "8070 QPS（单连接）"],
-      ["性能", "p99 0.17ms"],
-      ["工程", "CMake"],
-      ["工程", "跨平台事件抽象"]
+      ["语言", "C++17（RAII、STL、移动语义）"], ["系统", "epoll（Reactor）"],
+      ["系统", "非阻塞 IO"], ["系统", "HTTP（手写解析）"],
+      ["性能", "8070 QPS（单连接）"], ["性能", "p99 0.17ms"],
+      ["工程", "CMake"], ["工程", "跨平台事件抽象"]
     ],
     desc: "作为代码评审 Agent 的工具后端，承担高频正则扫描与代码指标计算。",
     bullets: [
@@ -374,20 +261,15 @@ const PROJECTS = [
     id: "go-gateway",
     url: "https://github.com/Cixuy/go-gateway",
     name: "Go 微服务网关",
-    role: "独立开发",
-    period: "2026/09 - 2026/10",
-    direction: ["go", "backend"],
+    role: "独立开发", period: "2026/09 - 2026/10",
+    direction: ["go", "backend"], distinct: 1.0,
     tags: ["go", "golang", "网关", "限流", "熔断", "中间件", "prometheus", "监控",
-           "jwt", "鉴权", "反向代理", "微服务", "云原生", "高并发"],
+           "jwt", "鉴权", "反向代理", "微服务", "云原生", "高并发", "服务治理"],
     stack: "Go + net/http + Prometheus",
     skills: [
-      ["语言", "Go（并发、channel）"],
-      ["服务治理", "限流（令牌桶）"],
-      ["服务治理", "熔断（三态机）"],
-      ["服务治理", "JWT（鉴权）"],
-      ["服务治理", "配置热加载"],
-      ["可观测", "Prometheus（指标）"],
-      ["存储", "Redis"]
+      ["语言", "Go（并发、channel）"], ["服务治理", "限流（令牌桶）"],
+      ["服务治理", "熔断（三态机）"], ["服务治理", "JWT（鉴权）"],
+      ["服务治理", "配置热加载"], ["可观测", "Prometheus（指标）"], ["存储", "Redis"]
     ],
     desc: "统一收口鉴权、限流、熔断、日志与指标的 HTTP 网关，支持配置热加载。",
     bullets: [
@@ -398,138 +280,128 @@ const PROJECTS = [
     ]
   },
   {
-    id: "gesture-music",
-    url: "https://github.com/Cixuy/gesture-music",
-    name: "手势音乐盒",
-    role: "独立开发",
-    period: "2026/09 - 2026/10",
-    direction: ["frontend", "backend"],
-    tags: ["web", "canvas", "websocket", "redis", "实时", "音频", "前端", "spring boot"],
-    stack: "MediaPipe + Web Audio + Canvas + Spring Boot + Redis",
-    skills: [
-      ["前端", "Canvas 2D"],
-      ["前端", "MediaPipe（浏览器内推理）"],
-      ["音频", "Web Audio（ADSR 合成）"],
-      ["系统", "WebSocket（房间）"],
-      ["系统", "Redis（Pub/Sub）"],
-      ["存储", "MySQL"],
-      ["存储", "Redis（ZSET 榜）"]
-    ],
-    desc: "浏览器内手部识别驱动发声的互动应用，支持多人同房间合奏。",
-    bullets: [
-      "<b>浏览器内推理</b>：MediaPipe 手部关键点检测跑在本地 WASM，不依赖云端；检测与渲染解耦，30fps 检测驱动 60fps 画面",
-      "<b>实时合成</b>：Web Audio 振荡器叠加 ADSR 包络发声，音高量化到五声音阶，任意手势都不会产生刺耳音程",
-      "<b>房间广播</b>：WebSocket 只同步音符事件而非坐标，服务端经 Redis Pub/Sub 扇出，多实例部署下仍能互相听到",
-      "<b>记录与榜单</b>：演奏明细入 MySQL，周榜用 Redis ZSET 维护，在线人数用 Set 跨实例共享"
-    ]
-  },
-  {
     id: "api-testkit",
     url: "https://github.com/Cixuy/api-testkit",
     name: "接口自动化测试框架",
-    role: "独立开发",
-    period: "2026/09 - 2026/10",
-    direction: ["test", "backend"],
+    role: "独立开发", period: "2026/09 - 2026/10",
+    direction: ["test", "backend"], distinct: 1.0,
     tags: ["python", "测试", "自动化", "接口测试", "pytest", "ci", "持续集成",
            "yaml", "框架", "质量保障", "断言"],
     stack: "Python + requests + PyYAML",
     skills: [
-      ["语言", "Python"],
-      ["测试", "用例 DSL"],
-      ["测试", "断言体系（8 类）"],
-      ["测试", "HTML/JUnit 报告"],
-      ["测试", "并行与重试"],
-      ["工程", "CI 集成"]
+      ["语言", "Python"], ["测试", "用例 DSL"], ["测试", "断言体系（8 类）"],
+      ["测试", "HTML/JUnit 报告"], ["测试", "并行与重试"], ["工程", "CI 集成"]
     ],
     desc: "数据驱动的接口自动化框架：YAML 描述用例，自带执行引擎、断言体系与报告生成。",
     bullets: [
-      "<b>用例 DSL</b>：YAML 定义多步骤请求，支持变量插值与跨步骤提取，用例与代码解耦，非开发人员也能改",
+      "<b>用例 DSL</b>：YAML 定义多步骤请求，支持变量插值与跨步骤提取，用例与代码解耦",
       "<b>断言体系</b>：覆盖状态码、JSONPath、数值区间、正则、JSON Schema 与响应耗时共 8 类断言",
       "<b>执行与报告</b>：支持并行执行、仅 5xx 重试、按标签过滤；输出 HTML 报告与 JUnit XML 供 CI 解析",
       "<b>工程化</b>：冒烟与集成用例分组，冒烟不依赖外部服务，集成用例单独验证跨语言链路"
     ]
+  },
+  {
+    id: "gesture-music",
+    url: "https://github.com/Cixuy/gesture-music",
+    name: "手势音乐盒",
+    role: "独立开发", period: "2026/09 - 2026/10",
+    direction: ["frontend", "backend"], distinct: 1.0,
+    tags: ["web", "canvas", "websocket", "redis", "实时", "音频", "前端", "spring boot",
+           "pub/sub", "长连接"],
+    stack: "MediaPipe + Web Audio + Canvas + Spring Boot + Redis",
+    skills: [
+      ["前端", "Canvas 2D"], ["前端", "MediaPipe（浏览器内推理）"],
+      ["音频", "Web Audio（ADSR 合成）"], ["系统", "WebSocket（房间）"],
+      ["系统", "Redis（Pub/Sub）"], ["存储", "MySQL"], ["存储", "Redis（ZSET 榜）"]
+    ],
+    desc: "浏览器内手部识别驱动发声的互动应用，支持多人同房间合奏。",
+    bullets: [
+      "<b>浏览器内推理</b>：MediaPipe 手部关键点检测跑在本地 WASM，不依赖云端；检测与渲染解耦",
+      "<b>实时合成</b>：Web Audio 振荡器叠加 ADSR 包络发声，音高量化到五声音阶，任意手势都不刺耳",
+      "<b>房间广播</b>：WebSocket 只同步音符事件而非坐标，服务端经 Redis Pub/Sub 扇出，多实例仍能互相听到",
+      "<b>记录与榜单</b>：演奏明细入 MySQL，周榜用 Redis ZSET 维护，在线人数用 Set 跨实例共享"
+    ]
+  },
+  {
+    id: "serverops",
+    url: "https://github.com/Cixuy/serverops",
+    name: "ServerOps 服务器智能运维平台",
+    role: "核心开发", period: "2026/07 - 2026/08",
+    direction: ["backend", "ai"], distinct: 1.0,
+    tags: ["java", "spring boot", "springboot", "mysql", "redis", "influxdb", "时序",
+           "websocket", "ai", "agent", "rag", "大模型", "向量", "milvus", "运维", "监控", "告警"],
+    stack: "Spring Boot + Vue 3 + MySQL + InfluxDB + Milvus",
+    skills: [
+      ["语言", "Java"], ["框架", "Spring Boot"], ["存储", "MySQL（分表）"],
+      ["存储", "InfluxDB（Flux 时序聚合）"], ["存储", "Redis"],
+      ["AI", "Milvus（向量检索）"], ["AI", "Embedding"], ["AI", "RAG（Top-K 召回）"],
+      ["AI", "Agent（多 Agent 编排）"], ["系统", "WebSocket（双通道）"]
+    ],
+    desc: "面向中小企业的服务器运维平台，集成指标采集、实时监控、告警闭环、自愈规则引擎与 AI 诊断。",
+    bullets: [
+      "<b>双通道实时推送</b>：WebSocket 拆分前端通道与采集端通道，指标 5 秒级推送、配置变更秒级下发，替代 HTTP 轮询",
+      "<b>存储分层</b>：MySQL 存业务数据并对操作日志分表，InfluxDB 存时序指标，用 Flux 做多时间窗聚合",
+      "<b>RAG 链路</b>：Milvus + Embedding 构建运维知识库，实现故障手册切片入库与 Top-K 召回",
+      "<b>多 Agent 编排</b>：基于 Planner-Executor-Supervisor 流程把告警内容与检索上下文拼接，生成诊断报告"
+    ]
+  },
+  {
+    id: "smart-site",
+    url: "https://github.com/Cixuy/smart-site",
+    name: "智慧工地安全智能监控平台",
+    role: "核心开发", period: "2026/02 - 2026/04",
+    direction: ["backend", "frontend"], distinct: 0.8,
+    tags: ["java", "spring boot", "springboot", "mybatis", "mysql", "vue", "websocket",
+           "redis", "权限", "rbac", "jwt", "接口", "restful", "物联网", "实时"],
+    stack: "Spring Boot + MyBatis + MySQL + Vue 3",
+    skills: [
+      ["语言", "Java（集合、并发）"], ["框架", "Spring Boot"], ["框架", "Spring Security"],
+      ["框架", "MyBatis"], ["存储", "MySQL（索引与事务）"], ["存储", "Redis（缓存）"],
+      ["系统", "WebSocket（长连接）"], ["工程", "RBAC（权限模型）"], ["工程", "状态机（告警流转）"]
+    ],
+    desc: "面向建筑工地的一体化安全管理平台，覆盖设备台账、塔吊与升降机实时监控、AI 视频告警与 3D 大屏。",
+    bullets: [
+      "<b>认证与权限</b>：基于 Spring Security + JWT 实现无状态认证与 RBAC 控制，封装全局拦截器与 ThreadLocal 上下文",
+      "<b>实时推送</b>：用 WebSocket 推送塔吊运行参数、环境指标与告警截图，替代 HTTP 轮询",
+      "<b>缓存治理</b>：Redis 缓存高频设备信息，配合线程池与 Redisson 逻辑过期解决缓存击穿，随机 TTL 规避雪崩",
+      "<b>告警闭环</b>：设计「生成 → 推送 → 接单 → 处置 → 恢复」状态机，用状态流转约束非法操作"
+    ]
   }
 ];
 
-
 /* ------------------------------------------------------------------
-   岗位预设：一键切换项目组合、求职意向与技能排序
+   岗位预设
 ------------------------------------------------------------------ */
 const ROLE_PRESETS = [
-  {
-    id: "java-backend", label: "Java 后端", intent: "Java 后端开发工程师",
-    order: ["语言","框架","存储","系统","AI","工程"],
+  { id: "java-backend", label: "Java 后端", intent: "Java 后端开发工程师",
     projects: ["code-review-agent", "serverops", "smart-site"],
-    skills: [
-      "<b>语言与基础</b>：Java（集合、并发、JVM 内存模型）、SQL；掌握常用设计模式",
-      "<b>框架与中间件</b>：Spring Boot、Spring Security、MyBatis；MySQL 索引与事务、Redis 缓存与分布式锁",
-      "<b>工程能力</b>：接口设计、权限模型、状态机建模、缓存治理；Git、Maven、Linux、Docker",
-      "<b>AI 应用</b>：RAG 链路、Agent 工具编排、MCP 协议"
-    ]
-  },
-  {
-    id: "ai-agent", label: "AI Agent", intent: "AI Agent 应用开发工程师",
-    order: ["语言","AI","框架","存储","工程","系统"],
+    order: ["语言", "框架", "存储", "系统", "AI", "工程"] },
+  { id: "ai-agent", label: "AI Agent", intent: "AI Agent 应用开发工程师",
     projects: ["code-review-agent", "serverops", "cpp-code-insight"],
-    skills: [
-      "<b>Agent 开发</b>：MCP 协议工具暴露、多 Agent 编排（Planner-Executor-Supervisor）、工具调用与降级策略",
-      "<b>检索增强</b>：文档切片、Embedding 与向量库、Top-K 召回、上下文预算裁剪",
-      "<b>语言与框架</b>：Java、Spring Boot、Spring AI；Python 基础",
-      "<b>工程</b>：流式输出（SSE）、提示词与上下文管理、Git、Linux"
-    ]
-  },
-  {
-    id: "cpp-systems", label: "C++ 工程师", intent: "C++ 后端 / 系统开发工程师",
-    order: ["语言","系统","性能","工程","存储","框架"],
+    order: ["语言", "AI", "框架", "存储", "工程", "系统"] },
+  { id: "cpp-systems", label: "C++ 工程师", intent: "C++ 后端 / 系统开发工程师",
     projects: ["cpp-code-insight", "code-review-agent", "go-gateway"],
-    skills: [
-      "<b>语言</b>：C++17（RAII、STL、移动语义）、Java、Go；熟悉 Linux 开发环境",
-      "<b>系统编程</b>：epoll/Reactor、非阻塞 IO、TCP 协议栈、手写 HTTP 报文解析",
-      "<b>性能</b>：单连接压测 8070 QPS、p99 0.17ms；会用压测定位瓶颈",
-      "<b>工程</b>：CMake、GDB、Git；跨语言服务对接"
-    ]
-  },
-  {
-    id: "server-ops", label: "服务器工程师", intent: "服务器开发 / 运维开发工程师",
-    order: ["语言","服务治理","可观测","存储","系统","工程"],
+    order: ["语言", "系统", "性能", "工程", "存储", "框架"] },
+  { id: "server-ops", label: "服务器工程师", intent: "服务器开发 / 运维开发工程师",
     projects: ["serverops", "go-gateway", "cpp-code-insight"],
-    skills: [
-      "<b>可观测性</b>：指标采集与存储（InfluxDB 时序、Prometheus 指标）、告警闭环、日志分表",
-      "<b>服务治理</b>：限流（令牌桶）、熔断（三态机）、反向代理与灰度分流",
-      "<b>语言与框架</b>：Java、Spring Boot、Go；MySQL、Redis、Linux",
-      "<b>工程</b>：WebSocket 长连接管理、优雅关闭、配置热加载"
-    ]
-  },
-  {
-    id: "test-dev", label: "测试开发", intent: "测试开发工程师",
-    order: ["语言","测试","工程","框架","存储"],
+    order: ["语言", "服务治理", "可观测", "存储", "系统", "工程"] },
+  { id: "test-dev", label: "测试开发", intent: "测试开发工程师",
     projects: ["api-testkit", "code-review-agent", "serverops"],
-    skills: [
-      "<b>测试框架</b>：接口自动化框架设计（用例 DSL、断言体系、报告生成）、数据驱动、并行执行",
-      "<b>质量工程</b>：用例分层（冒烟/集成）、失败定位与重试策略、CI 集成（JUnit XML）",
-      "<b>语言</b>：Python（requests、pytest 生态）、Java、SQL",
-      "<b>业务理解</b>：接口契约、幂等与边界场景设计"
-    ]
-  },
-  {
-    id: "go-cloud", label: "Go 云原生", intent: "Go 服务端开发工程师",
-    order: ["语言","服务治理","可观测","系统","存储","工程"],
+    order: ["语言", "测试", "工程", "框架", "存储"] },
+  { id: "go-cloud", label: "Go 云原生", intent: "Go 服务端开发工程师",
     projects: ["go-gateway", "gesture-music", "cpp-code-insight"],
-    skills: [
-      "<b>语言</b>：Go（并发模型、channel、context）、Java、C++ 基础",
-      "<b>服务治理</b>：网关路由、限流熔断、JWT 鉴权、配置热加载、优雅关闭",
-      "<b>中间件</b>：Redis（Pub/Sub、ZSET、Set）、MySQL、WebSocket 长连接",
-      "<b>可观测</b>：Prometheus 指标（QPS、耗时直方图）、结构化日志"
-    ]
-  }
+    order: ["语言", "服务治理", "可观测", "系统", "存储", "工程"] }
 ];
 
+const DIRECTIONS = {
+  ai: ["ai", "agent", "大模型", "llm", "rag", "向量", "智能体", "mcp", "prompt", "推理"],
+  backend: ["java", "spring", "后端", "服务端", "微服务", "mysql", "redis", "高并发", "中间件"],
+  go: ["go", "golang", "云原生", "kubernetes", "k8s", "docker"],
+  cpp: ["c++", "cpp", "linux", "底层", "网络编程", "内核", "嵌入式", "驱动"],
+  test: ["测试", "自动化", "质量", "qa", "sdet", "用例", "接口测试"],
+  frontend: ["vue", "react", "前端", "javascript", "typescript", "canvas"]
+};
 
-/* ------------------------------------------------------------------
-   技能汇总：按选中项目聚合，保证"项目里写的东西"和"技能里写的东西"一致
------------------------------------------------------------------- */
-const SKILL_ORDER = ["语言", "框架", "存储", "系统", "服务治理", "可观测",
-                     "AI", "前端", "音频", "性能", "测试", "工程"];
 const SKILL_LABEL = {
   "语言": "语言与基础", "框架": "框架与中间件", "存储": "存储与缓存",
   "系统": "系统与网络", "服务治理": "服务治理", "可观测": "可观测性",
@@ -537,44 +409,110 @@ const SKILL_LABEL = {
   "性能": "性能优化", "测试": "测试与质量", "工程": "工程与工具"
 };
 
-// 技术名与括号里的说明分开：同名技术合并说明，避免"Java"和"Java（并发）"重复出现
-function techBase(text) {
-  return text.split(/[（(]/)[0].trim();
+/* ------------------------------------------------------------------
+   状态与本地存储
+------------------------------------------------------------------ */
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+
+const state = {
+  photo: localStorage.getItem("resume.photo") || null,
+  roleId: LS.get("resume.role", "java-backend"),
+  profile: LS.get("resume.profile", {}),
+  overrides: LS.get("resume.overrides", {}),
+  selected: [],
+  skills: [],
+  jd: "",
+  analysis: { text: "", dirScore: {} },
+  aiScores: null,
+  touched: false,
+  ai: LS.get("resume.ai", { base: "", model: "", key: "" })
+};
+
+for (const k of Object.keys(state.profile)) {
+  if (k === "edu") Object.assign(PROFILE.edu, state.profile.edu || {});
+  else if (k in PROFILE) PROFILE[k] = state.profile[k];
 }
-function techDetail(text) {
-  const m = text.match(/[（(]([^）)]+)[）)]/);
-  return m ? m[1].trim() : "";
+
+function saveProfile() { LS.set("resume.profile", state.profile); }
+
+/* ------------------------------------------------------------------
+   匹配：关键词打分 + 项目稀缺度
+------------------------------------------------------------------ */
+function analyzeJD(text) {
+  const lower = (text || "").toLowerCase();
+  const dirScore = {};
+  for (const [dir, words] of Object.entries(DIRECTIONS)) {
+    for (const w of words) if (lower.includes(w)) dirScore[dir] = (dirScore[dir] || 0) + 1;
+  }
+  return { text: lower, dirScore };
 }
+
+function scoreProject(proj, analysis) {
+  const lower = analysis.text || "";
+  let hitCount = 0;
+  const matched = [];
+  for (const tag of proj.tags) if (lower.includes(tag)) { hitCount++; matched.push(tag); }
+  let dirBonus = 0;
+  for (const d of proj.direction) if (analysis.dirScore[d]) dirBonus += analysis.dirScore[d] * 2;
+  const raw = (hitCount * 3 + dirBonus) * (proj.distinct || 1);
+  return { score: Math.round(raw), hitCount, matched, dirBonus };
+}
+
+function inferIntent(text) {
+  const t = (text || "").toLowerCase();
+  const rules = [
+    { keys: ["测试开发", "sdet", "自动化测试"], title: "测试开发工程师" },
+    { keys: ["ai agent", "智能体", "大模型应用", "llm 应用", "rag"], title: "AI Agent 应用开发工程师" },
+    { keys: ["c++", "cpp"], title: "C++ 后端 / 系统开发工程师" },
+    { keys: ["go", "golang"], title: "Go 服务端开发工程师" },
+    { keys: ["运维开发", "sre", "devops", "服务器"], title: "服务器开发 / 运维开发工程师" },
+    { keys: ["前端", "vue", "react"], title: "前端开发工程师" }
+  ];
+  for (const r of rules) if (r.keys.some(k => t.includes(k))) return r.title;
+  if (t.includes("java") || t.includes("后端")) return "Java 后端开发工程师";
+  return PROFILE.intent;
+}
+
+/* ------------------------------------------------------------------
+   技能汇总
+------------------------------------------------------------------ */
+function techBase(text) { return text.split(/[（(]/)[0].trim(); }
+function techDetail(text) { const m = text.match(/[（(]([^）)]+)[）)]/); return m ? m[1].trim() : ""; }
 
 function composeSkills(projectIds, order) {
-  const seq = order && order.length ? order : SKILL_ORDER;
-  const picked = projectIds
-    .map(id => PROJECTS.find(p => p.id === id))
-    .filter(p => p && Array.isArray(p.skills));
+  const jd = (state.jd || "").toLowerCase();
+  const picked = projectIds.map(id => PROJECTS.find(p => p.id === id)).filter(p => p && p.skills);
   if (!picked.length) return [];
 
-  // 按"技术名"去重：Java 与 Java（集合、并发）算同一个，
-  // Spring Boot 与 Spring Boot 3 也算同一个，保留信息量最大的那条
-  const bucket = new Map();   // 分类 -> Map<技术名, 描述>
+  const bucket = new Map();
   for (const proj of picked) {
     for (const [cat, text] of proj.skills) {
       if (!bucket.has(cat)) bucket.set(cat, new Map());
       const m = bucket.get(cat);
       const key = techBase(text);
       const old = m.get(key) || { detail: [] };
-      const detail = techDetail(text);
-      if (detail && !old.detail.includes(detail)) old.detail.push(detail);
+      const d = techDetail(text);
+      if (d && !old.detail.includes(d)) old.detail.push(d);
       m.set(key, { name: key, detail: old.detail });
     }
   }
 
+  const seq = order && order.length ? order : Object.keys(SKILL_LABEL);
   const lines = [];
   for (const cat of seq) {
     const items = bucket.get(cat);
     if (!items || !items.size) continue;
-    let joined = [...items.values()]
-      .map(it => it.detail.length ? `${it.name}（${it.detail.join("、")}）` : it.name)
-      .join("、");
+    const arr = [...items.values()];
+    arr.sort((a, b) => {
+      const hitA = jd && jd.includes(a.name.toLowerCase()) ? 0 : 1;
+      const hitB = jd && jd.includes(b.name.toLowerCase()) ? 0 : 1;
+      return hitA - hitB;
+    });
+    let joined = arr.map(it => it.detail.length ? `${it.name}（${it.detail.join("、")}）` : it.name).join("、");
     if (joined.length > 88) joined = joined.slice(0, 86) + "…";
     lines.push(`<b>${SKILL_LABEL[cat] || cat}</b>：${joined}`);
     if (lines.length >= 4) break;
@@ -582,103 +520,9 @@ function composeSkills(projectIds, order) {
   return lines;
 }
 
-/* 岗位方向词表：用于把 JD 归到某个方向，影响排序权重 */
-const DIRECTIONS = {
-  ai: ["ai", "agent", "大模型", "llm", "rag", "向量", "智能体", "mcp", "prompt", "推理"],
-  backend: ["java", "spring", "后端", "服务端", "微服务", "mysql", "redis", "高并发", "中间件"],
-  go: ["go", "golang", "云原生", "kubernetes", "k8s", "docker"],
-  cpp: ["c++", "cpp", "linux", "底层", "网络编程", "内核", "嵌入式", "驱动"],
-  test: ["测试", "自动化", "质量", "qa", "sdet", "用例", "接口测试"],
-  frontend: ["vue", "react", "前端", "javascript", "typescript"]
-};
-
 /* ------------------------------------------------------------------
-   匹配：JD 文本 → 关键词集合 → 项目打分
+   渲染
 ------------------------------------------------------------------ */
-function analyzeJD(text) {
-  const lower = (text || "").toLowerCase();
-  const hits = [];
-  for (const [dir, words] of Object.entries(DIRECTIONS)) {
-    for (const w of words) {
-      if (lower.includes(w)) hits.push({ dir, word: w });
-    }
-  }
-  // 方向权重：出现次数越多，该方向越重要
-  const dirScore = {};
-  for (const h of hits) dirScore[h.dir] = (dirScore[h.dir] || 0) + 1;
-  return { hits, dirScore };
-}
-
-function scoreProject(proj, analysis) {
-  const lower = analysis.text;
-  let hitCount = 0;
-  const matched = [];
-  for (const tag of proj.tags) {
-    if (lower.includes(tag)) { hitCount++; matched.push(tag); }
-  }
-  // 方向契合度
-  let dirBonus = 0;
-  for (const d of proj.direction) {
-    if (analysis.dirScore[d]) dirBonus += analysis.dirScore[d] * 2;
-  }
-  const score = hitCount * 3 + dirBonus;
-  return { score, hitCount, matched, dirBonus };
-}
-
-/* ------------------------------------------------------------------
-   状态
------------------------------------------------------------------- */
-const state = {
-  photo: null,          // dataURL，存本地 localStorage，不进仓库
-  roleId: "java-backend",
-  skills: [],
-  selected: [],
-  analysis: { text: "", hits: [], dirScore: {} }
-};
-
-/* ------------------------------------------------------------------
-   渲染：项目推荐列表
------------------------------------------------------------------- */
-function renderProjects() {
-  const list = document.getElementById("projList");
-  list.innerHTML = "";
-  const ranked = PROJECTS.map(p => {
-    const s = scoreProject(p, state.analysis);
-    return { p, ...s };
-  }).sort((a, b) => b.score - a.score);
-
-  for (const item of ranked) {
-    const on = state.selected.includes(item.p.id);
-    const div = document.createElement("div");
-    div.className = "proj" + (on ? " on" : "");
-    const why = item.matched.length
-      ? "命中：" + item.matched.slice(0, 6).join("、")
-      : "与 JD 关键词重合较少";
-    div.innerHTML = `
-      <div class="proj-head">
-        <span class="proj-name">${on ? "✓ " : ""}${item.p.name}</span>
-        <span class="score"><b>${item.score}</b> 分</span>
-      </div>
-      <div class="proj-meta">${item.p.stack} · ${item.p.direction.join(" / ")}</div>
-      <div class="proj-why">${why}</div>`;
-    div.onclick = () => toggle(item.p.id);
-    list.appendChild(div);
-  }
-  document.getElementById("pickCount").textContent = `已选 ${state.selected.length} 个`;
-}
-
-function applyRole(roleId) {
-  const role = ROLE_PRESETS.find(r => r.id === roleId);
-  if (!role) return;
-  state.roleId = roleId;
-  state.selected = role.projects.filter(id => PROJECTS.some(p => p.id === id));
-  state.skills = composeSkills(state.selected, currentOrder());
-  document.getElementById("fIntent").value = role.intent;
-  renderRoles();
-  renderProjects();
-  renderPaper();
-}
-
 function currentOrder() {
   const r = ROLE_PRESETS.find(x => x.id === state.roleId);
   return r && r.order ? r.order : null;
@@ -688,15 +532,58 @@ function renderRoles() {
   const box = document.getElementById("roleList");
   box.innerHTML = "";
   for (const r of ROLE_PRESETS) {
-    const d = document.createElement("div");
-    d.className = "role" + (r.id === state.roleId ? " on" : "");
-    d.textContent = r.label;
-    d.onclick = () => applyRole(r.id);
-    box.appendChild(d);
+    const b = document.createElement("button");
+    b.className = "role-btn" + (r.id === state.roleId ? " on" : "");
+    b.textContent = r.label;
+    b.onclick = () => applyRole(r.id);
+    box.appendChild(b);
   }
 }
 
+function applyRole(roleId) {
+  const role = ROLE_PRESETS.find(r => r.id === roleId);
+  if (!role) return;
+  state.roleId = roleId;
+  LS.set("resume.role", roleId);
+  state.touched = false;
+  state.selected = role.projects.filter(id => PROJECTS.some(p => p.id === id));
+  if (!state.jd) { PROFILE.intent = role.intent; state.profile.intent = role.intent; }
+  state.skills = composeSkills(state.selected, currentOrder());
+  renderRoles(); renderProjects(); renderPaper();
+}
+
+function renderProjects() {
+  const list = document.getElementById("projList");
+  list.innerHTML = "";
+  const ranked = PROJECTS.map(p => {
+    const s = scoreProject(p, state.analysis);
+    const ai = state.aiScores && state.aiScores[p.id];
+    const val = ai ? ai.score * 0.7 + s.score * 0.3 : s.score;
+    return { p, ...s, ai, val };
+  }).sort((a, b) => b.val - a.val);
+
+  for (const item of ranked) {
+    const on = state.selected.includes(item.p.id);
+    const div = document.createElement("div");
+    div.className = "proj" + (on ? " on" : "");
+    const why = item.matched.length ? "命中：" + item.matched.slice(0, 6).join("、") : "与 JD 关键词重合较少";
+    const aiLine = item.ai ? `<div class="proj-ai">AI：${item.ai.reason}</div>` : "";
+    div.innerHTML = `
+      <div class="proj-head">
+        <span class="proj-name">${on ? "✓ " : ""}${item.p.name}</span>
+        <span class="score"><b>${Math.round(item.ai ? item.ai.score : item.score)}</b> 分</span>
+      </div>
+      <div class="proj-meta">${item.p.stack} · 稀缺度 ${item.p.distinct}</div>
+      <div class="proj-why">${why}</div>
+      ${aiLine}`;
+    div.onclick = () => toggle(item.p.id);
+    list.appendChild(div);
+  }
+  document.getElementById("pickCount").textContent = `已选 ${state.selected.length} 个`;
+}
+
 function toggle(id) {
+  state.touched = true;
   const i = state.selected.indexOf(id);
   if (i >= 0) state.selected.splice(i, 1);
   else {
@@ -704,71 +591,64 @@ function toggle(id) {
     state.selected.push(id);
   }
   state.skills = composeSkills(state.selected, currentOrder());
-  renderProjects();
-  renderPaper();
+  renderProjects(); renderPaper();
 }
 
-/* ------------------------------------------------------------------
-   渲染：简历预览
------------------------------------------------------------------- */
-function readForm() {
-  return {
-    name: document.getElementById("fName").value.trim(),
-    birth: document.getElementById("fBirth").value.trim(),
-    phone: document.getElementById("fPhone").value.trim(),
-    mail: document.getElementById("fMail").value.trim(),
-    home: document.getElementById("fHome").value.trim(),
-    intent: document.getElementById("fIntent").value.trim()
-  };
+function ce(k, value) {
+  return `<span contenteditable="true" data-k="${k}">${value || ""}</span>`;
 }
 
 function renderPaper() {
-  const f = readForm();
   const paper = document.getElementById("paper");
   const picked = state.selected.length
     ? state.selected.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean)
     : PROJECTS.slice(0, 2);
 
-  const projectsHtml = picked.map(p => `
-    <div class="proj-item">
-      <div class="proj-title">
-        <span class="date">${p.period}</span>
-        <span class="name">${p.name}</span>
-        <span class="role">　${p.role}</span>
-      </div>
-      <div class="proj-desc">${p.desc}</div>
-      <div class="proj-url">项目地址：<a href="${p.url}" target="_blank">${p.url.replace("https://", "")}</a></div>
-      <ul>${p.bullets.map(b => `<li>${b}</li>`).join("")}</ul>
-    </div>`).join("");
+  const projectsHtml = picked.map(p => {
+    const ov = state.overrides[p.id] || {};
+    const desc = ov.desc != null ? ov.desc : p.desc;
+    const items = p.bullets.map((b, i) => {
+      const text = ov["b" + i] != null ? ov["b" + i] : b;
+      return `<li contenteditable="true" data-pid="${p.id}" data-i="${i}">${text}</li>`;
+    }).join("");
+    return `
+      <div class="proj-item">
+        <div class="proj-title">
+          <span class="date">${p.period}</span>
+          <span>${p.name}</span>
+          <span class="role">　${p.role}</span>
+        </div>
+        <div class="proj-desc" contenteditable="true" data-pid="${p.id}" data-i="desc">${desc}</div>
+        <div class="proj-url">项目地址：<a href="${p.url}" target="_blank">${p.url.replace("https://", "")}</a></div>
+        <ul>${items}</ul>
+      </div>`;
+  }).join("");
 
   paper.innerHTML = `
     <div class="head">
-      <div class="head-main">
-        <h1>${f.name || "（姓名）"}</h1>
-        <div class="contact">
-      <span>出生年月：${f.birth}</span>
-      <span>${f.phone}</span>
-      <span>${f.mail}</span>
-          <span>个人主页：<a href="https://${f.home}" target="_blank">${f.home}</a></span>
-        </div>
-        <div class="intent"><b>求职意向：</b>${f.intent || "（求职意向）"}</div>
-      </div>
-      <div class="head-photo${state.photo ? '' : ' empty'}" id="photoSlot">
+      <div class="head-photo${state.photo ? "" : " empty"}" id="photoSlot">
         ${state.photo
-          ? `<img src="${state.photo}" alt="照片">
-             <button class="photo-del" id="photoDel" title="移除">×</button>`
+          ? `<img src="${state.photo}" alt="照片"><button class="photo-del" id="photoDel" title="移除">×</button>`
           : `<span>点击<br>上传照片</span>`}
       </div>
+      <h1>${ce("name", PROFILE.name)}</h1>
+      <div class="contact">
+        <span>出生年月：${ce("birth", PROFILE.birth)}</span>
+        <span>${ce("phone", PROFILE.phone)}</span>
+        <span>${ce("mail", PROFILE.mail)}</span>
+        <span>个人主页：<a href="https://${PROFILE.home}" target="_blank">${ce("home", PROFILE.home)}</a></span>
+      </div>
+      <div class="intent"><b>求职意向：</b>${ce("intent", PROFILE.intent)}</div>
     </div>
 
     <div class="sec">
       <div class="sec-title">教育经历</div>
       <div class="edu-line">
-        <span class="date">${PROFILE.edu.period}</span>
-        <span><b>${PROFILE.edu.school}</b>　${PROFILE.edu.major} · ${PROFILE.edu.degree}</span>
+        <span class="date">${ce("edu.period", PROFILE.edu.period)}</span>
+        <span><b>${ce("edu.school", PROFILE.edu.school)}</b>　${ce("edu.major", PROFILE.edu.major)} · ${PROFILE.edu.degree}</span>
       </div>
-      <div class="muted">主修课程：${PROFILE.edu.courses}</div>
-      <div class="muted">${PROFILE.extra}</div>
+      <div class="muted">主修课程：${ce("edu.courses", PROFILE.edu.courses)}</div>
+      <div class="muted">${ce("extra", PROFILE.extra)}</div>
     </div>
 
     <div class="sec">
@@ -784,25 +664,147 @@ function renderPaper() {
 }
 
 /* ------------------------------------------------------------------
-   导出 Word：用带 Word 命名空间的 HTML，Word 可直接打开并编辑
+   就地编辑：写回状态并落盘
+------------------------------------------------------------------ */
+document.addEventListener("input", (e) => {
+  const el = e.target.closest("[contenteditable]");
+  if (!el) return;
+
+  const pid = el.dataset.pid;
+  if (pid) {
+    const i = el.dataset.i;
+    if (!state.overrides[pid]) state.overrides[pid] = {};
+    state.overrides[pid][i === "desc" ? "desc" : "b" + i] = el.innerHTML;
+    LS.set("resume.overrides", state.overrides);
+    return;
+  }
+
+  const k = el.dataset.k;
+  if (!k) return;
+  const val = el.innerText.trim();
+  if (k.indexOf("edu.") === 0) {
+    PROFILE.edu[k.slice(4)] = val;
+    state.profile.edu = PROFILE.edu;
+  } else {
+    PROFILE[k] = val;
+    state.profile[k] = val;
+  }
+  saveProfile();
+});
+
+/* ------------------------------------------------------------------
+   照片
+------------------------------------------------------------------ */
+const photoInput = document.createElement("input");
+photoInput.type = "file"; photoInput.accept = "image/*"; photoInput.style.display = "none";
+document.body.appendChild(photoInput);
+
+photoInput.addEventListener("change", () => {
+  const file = photoInput.files && photoInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 300, maxH = 400;
+      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      state.photo = canvas.toDataURL("image/jpeg", 0.86);
+      try { localStorage.setItem("resume.photo", state.photo); } catch (err) {}
+      renderPaper();
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+  photoInput.value = "";
+});
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#photoDel")) {
+    state.photo = null; localStorage.removeItem("resume.photo"); renderPaper(); return;
+  }
+  if (e.target.closest("#photoSlot")) photoInput.click();
+});
+
+/* ------------------------------------------------------------------
+   AI 分析
+------------------------------------------------------------------ */
+function aiReady() {
+  const a = state.ai || {};
+  return !!(a.base && a.key && a.model);
+}
+
+function updateAiState() {
+  document.getElementById("aiState").textContent = aiReady() ? "已配置" : "未配置";
+  document.getElementById("aiBase").value = state.ai.base || "";
+  document.getElementById("aiModel").value = state.ai.model || "";
+  document.getElementById("aiKey").value = state.ai.key || "";
+}
+
+async function runAi() {
+  const msg = document.getElementById("aiMsg");
+  if (!state.jd || state.jd.trim().length < 30) { msg.textContent = "先在左边粘一段 JD。"; return; }
+  if (!aiReady()) { msg.textContent = "请先填写接口地址、模型和密钥。"; return; }
+
+  msg.textContent = "分析中…";
+  const list = PROJECTS.map(p => ({ id: p.id, name: p.name, stack: p.stack, desc: p.desc, distinct: p.distinct }));
+
+  const sys = "你是技术招聘顾问。评估候选人项目与岗位 JD 的匹配度。"
+    + "只有当项目技术栈与 JD 要求确实相关时才给高分；大众题（人人做过的管理系统）适当降分。"
+    + "只返回 JSON：{\"results\":[{\"id\":\"项目id\",\"score\":0-100,\"reason\":\"不超过30字的中文理由\"}]}";
+  const user = "岗位 JD：\n" + state.jd.slice(0, 3000) + "\n\n候选项目：\n" + JSON.stringify(list, null, 1);
+
+  try {
+    const url = state.ai.base.replace(/\/+$/, "") + "/chat/completions";
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + state.ai.key },
+      body: JSON.stringify({
+        model: state.ai.model, temperature: 0.2,
+        messages: [{ role: "system", content: sys }, { role: "user", content: user }]
+      })
+    });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const data = await resp.json();
+    const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+    const jsonText = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
+    const parsed = JSON.parse(jsonText);
+
+    const map = {};
+    for (const r of parsed.results || []) if (r && r.id) map[r.id] = { score: Number(r.score) || 0, reason: r.reason || "" };
+    if (!Object.keys(map).length) throw new Error("返回内容无法解析");
+    state.aiScores = map;
+    renderProjects();
+    msg.textContent = "已按 AI 结果重排，点选项目即可加入。";
+  } catch (e) {
+    state.aiScores = null;
+    renderProjects();
+    msg.textContent = "调用失败：" + e.message + "。可能是密钥无效、模型名不对，或接口不允许跨域。当前仍按关键词打分。";
+  }
+}
+
+/* ------------------------------------------------------------------
+   导出
 ------------------------------------------------------------------ */
 function exportWord() {
-  // Word 不认 flex 布局，照片改成右浮动的 img，并去掉预览专用按钮
   let body = document.getElementById("paper").innerHTML;
   body = body.replace(/<button class="photo-del"[\s\S]*?<\/button>/g, "");
+  body = body.replace(/ contenteditable="true"/g, "");
+
   if (state.photo) {
-    body = body.replace(
-      /<div class="head-photo"[^>]*>[\s\S]*?<\/div>/,
+    body = body.replace(/<div class="head-photo"[^>]*>[\s\S]*?<button[\s\S]*?<\/button><\/div>/,
       `<img src="${state.photo}" style="float:right;width:84px;height:108px;object-fit:cover;margin-left:12px;">`);
   } else {
     body = body.replace(/<div class="head-photo"[^>]*>[\s\S]*?<\/div>/, "");
   }
-  body = body.replace('<div class="head">', '<div>').replace('</div></div>', '</div>');
+
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
   <head><meta charset="utf-8">
-  <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View>
-  <w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+  <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
   <style>
     @page { size: A4; margin: 1.4cm 1.6cm; }
     body { font-family: "Microsoft YaHei"; font-size: 10.5pt; line-height: 1.5; color: #1a1a1a; }
@@ -822,68 +824,70 @@ function exportWord() {
     .proj-url { font-size: 9pt; color: #555; }
     a { color: #1a4fb4; text-decoration: none; }
     ul { margin: 2pt 0 0 0; padding-left: 14pt; }
-    li { font-size: 9.8pt; margin-bottom: 2pt; }
+    li { font-size: 9.8pt; margin-bottom: 1.5pt; }
     .muted { color: #444; }
   </style></head><body>${body}</body></html>`;
 
-  const blob = new Blob(["\ufeff", html], { type: "application/msword" });
-  download(blob, `简历-${readForm().intent || "通用"}.doc`);
+  download(new Blob(["\ufeff", html], { type: "application/msword" }),
+    `简历-${(PROFILE.intent || "通用").replace(/[\s\/]/g, "")}.doc`);
 }
 
 function download(blob, filename) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = filename;
-  document.body.appendChild(a);
-  a.click();
+  document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
 }
 
 /* ------------------------------------------------------------------
-   事件绑定
+   事件
 ------------------------------------------------------------------ */
 const jdEl = document.getElementById("jd");
+let jdTimer = null;
+
 jdEl.addEventListener("input", () => {
-  const text = jdEl.value.toLowerCase();
-  state.analysis = { text, ...analyzeJD(jdEl.value) };
-  renderJdChips();
-  autoPickIfEmpty();
-  renderProjects();
-  renderPaper();
+  state.jd = jdEl.value;
+  clearTimeout(jdTimer);
+  jdTimer = setTimeout(() => {
+    state.analysis = analyzeJD(state.jd);
+    state.aiScores = null;
+    renderJdChips();
+
+    PROFILE.intent = inferIntent(state.jd);
+    state.profile.intent = PROFILE.intent;
+
+    if (!state.touched) autoPick(3);
+    state.skills = composeSkills(state.selected, currentOrder());
+    renderProjects(); renderPaper();
+  }, 250);
 });
+
+function autoPick(n) {
+  const ranked = PROJECTS.map(p => ({ p, ...scoreProject(p, state.analysis) }))
+    .sort((a, b) => b.score - a.score).slice(0, n || 2).map(x => x.p.id);
+  state.selected = ranked;
+}
 
 function renderJdChips() {
   const box = document.getElementById("jdChips");
-  const seen = new Set();
   box.innerHTML = "";
-  // 只展示方向，避免几十个关键词堆在一起
-  for (const [dir, n] of Object.entries(state.analysis.dirScore)) {
-    if (n <= 0 || seen.has(dir)) continue;
-    seen.add(dir);
-    const label = { ai: "AI/Agent", backend: "后端", go: "Go/云原生",
-                    cpp: "C++/底层", test: "测试", frontend: "前端" }[dir] || dir;
-    const span = document.createElement("span");
-    span.className = "chip hit";
-    span.textContent = `${label} ×${n}`;
-    box.appendChild(span);
+  const labels = { ai: "AI/Agent", backend: "后端", go: "Go/云原生",
+                   cpp: "C++/底层", test: "测试", frontend: "前端" };
+  let any = false;
+  for (const [dir, n] of Object.entries(state.analysis.dirScore || {})) {
+    if (!n) continue;
+    any = true;
+    const s = document.createElement("span");
+    s.className = "chip hit";
+    s.textContent = `${labels[dir] || dir} ×${n}`;
+    box.appendChild(s);
   }
-  if (!box.children.length) {
-    const span = document.createElement("span");
-    span.className = "chip";
-    span.textContent = "尚未识别到方向关键词";
-    box.appendChild(span);
+  if (!any) {
+    const s = document.createElement("span");
+    s.className = "chip"; s.textContent = "尚未识别到方向关键词";
+    box.appendChild(s);
   }
-}
-
-// JD 变化后若还没选项目，自动勾选分数最高的两个
-function autoPickIfEmpty() {
-  if (state.selected.length) return;
-  const ranked = PROJECTS.map(p => ({ p, ...scoreProject(p, state.analysis) }))
-                         .sort((a, b) => b.score - a.score)
-                         .slice(0, 2)
-                         .map(x => x.p.id);
-  state.selected = ranked;
-  state.skills = composeSkills(state.selected);
 }
 
 document.getElementById("btnSample").onclick = () => {
@@ -898,83 +902,40 @@ document.getElementById("btnSample").onclick = () => {
   jdEl.dispatchEvent(new Event("input"));
 };
 
+document.getElementById("btnAi").onclick = () => {
+  document.getElementById("aiMsg").scrollIntoView({ behavior: "smooth", block: "center" });
+  runAi();
+};
+document.getElementById("btnAiRun").onclick = runAi;
+document.getElementById("btnAiClear").onclick = () => {
+  state.ai = { base: "", model: "", key: "" };
+  LS.del("resume.ai");
+  updateAiState();
+  document.getElementById("aiMsg").textContent = "已清除本地配置。";
+};
+
+["aiBase", "aiModel", "aiKey"].forEach(id => {
+  document.getElementById(id).addEventListener("change", () => {
+    state.ai = {
+      base: document.getElementById("aiBase").value.trim(),
+      model: document.getElementById("aiModel").value.trim(),
+      key: document.getElementById("aiKey").value.trim()
+    };
+    LS.set("resume.ai", state.ai);
+    updateAiState();
+  });
+});
+
 document.getElementById("btnWord").onclick = exportWord;
 document.getElementById("btnPdf").onclick = () => {
-  document.getElementById("statusText").textContent = "在弹出的打印窗口里选择「另存为 PDF」";
+  document.getElementById("statusText").textContent = "在打印窗口里选择「另存为 PDF」";
   window.print();
 };
 
-["fName", "fBirth", "fPhone", "fMail", "fHome", "fIntent"].forEach(id => {
-  document.getElementById(id).addEventListener("input", renderPaper);
-});
-
-/* ------------------------------------------------------------------
-   照片：选择后等比缩放到 300x400 以内再转 base64，
-   避免大图撑爆 localStorage（上限约 5MB）
------------------------------------------------------------------- */
-const photoInput = document.createElement("input");
-photoInput.type = "file";
-photoInput.accept = "image/*";
-photoInput.style.display = "none";
-document.body.appendChild(photoInput);
-
-photoInput.addEventListener("change", () => {
-  const file = photoInput.files && photoInput.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      const maxW = 300, maxH = 400;
-      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-      state.photo = canvas.toDataURL("image/jpeg", 0.86);
-      try { localStorage.setItem("resume.photo", state.photo); } catch (e) {
-        console.warn("照片过大，未能保存到本地缓存");
-      }
-      renderPaper();
-    };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
-  photoInput.value = "";
-});
-
-// 照片区与移除按钮用事件委托，避免每次渲染后重新绑定
-document.addEventListener("click", (e) => {
-  if (e.target.closest("#photoDel")) {
-    state.photo = null;
-    localStorage.removeItem("resume.photo");
-    renderPaper();
-    return;
-  }
-  if (e.target.closest("#photoSlot")) {
-    photoInput.click();
-  }
-});
-
-/* 若同目录存在 profile.js，用它填满表单（个人数据不进仓库） */
-function applyProfile() {
-  const p = window.PROFILE_OVERRIDE;
-  if (!p) return;
-  const map = { fName: p.name, fBirth: p.birth, fPhone: p.phone,
-                fMail: p.mail, fHome: p.home, fIntent: p.intent };
-  for (const [id, v] of Object.entries(map)) {
-    if (v) document.getElementById(id).value = v;
-  }
-  if (p.edu) Object.assign(PROFILE.edu, p.edu);
-  if (p.extra) PROFILE.extra = p.extra;
-}
-
 /* 初始化 */
-try { state.photo = localStorage.getItem("resume.photo") || null; } catch (e) { state.photo = null; }
-applyProfile();
+updateAiState();
 applyRole(state.roleId);
-renderRoles();
+renderJdChips();
 </script>
 </body>
 </html>
