@@ -194,6 +194,10 @@
         </div>
         <div><label>密钥</label><input type="password" id="aiKey" placeholder="sk-..."></div>
       </div>
+      <div id="aiModelBox" style="display:none">
+        <label>可用模型 <em style="font-style:normal;color:var(--muted)">点一下即填入</em></label>
+        <div class="chips" id="aiModelPick"></div>
+      </div>
       <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap">
         <button class="mini" id="btnAiRun">用 AI 重新打分</button>
         <button class="mini" id="btnAiProbe">拉取可用模型</button>
@@ -902,7 +906,7 @@ async function readAiError(resp) {
   else if (s === 404) tip = "接口地址不对，多半是 /v1 写错或重复写了 /chat/completions";
   else if (s === 429) tip = "余额不足、并发超限或被限流";
   else if (s === 400 || s === 422) {
-    if (/model|模型|not.?exist|no.?such/i.test(detail)) tip = "模型名不存在，点“拉取可用模型”抄一个填进来";
+    if (/model|模型|not.?exist|no.?such/i.test(detail)) tip = "模型名不存在，点「拉取可用模型」再从列出的名字里选一个";
     else if (/api.?key|token|auth|unauthor/i.test(detail)) tip = "密钥格式不对，检查是否复制完整";
     else if (/temperature|max_tokens|param|unsupported/i.test(detail)) tip = "该模型不接受某个请求参数";
     else tip = "请求被服务端拒绝";
@@ -1000,6 +1004,42 @@ async function runAi() {
   }
 }
 
+/* 拉到的模型直接铺成一排可点的标签，比依赖浏览器原生的 datalist 下拉可靠得多
+   （不少浏览器要点两次、或者根本不显示小箭头，用户根本不知道能选） */
+function escHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function renderModelPick(ids) {
+  const box = document.getElementById("aiModelBox");
+  const wrap = document.getElementById("aiModelPick");
+
+  document.getElementById("aiModelList").innerHTML =
+    ids.map(i => `<option value="${escHtml(i)}"></option>`).join("");
+
+  const show = ids.slice(0, 16);
+  wrap.innerHTML = show.map(i => `<button class="chip" data-model="${escHtml(i)}">${escHtml(i)}</button>`).join("")
+    + (ids.length > show.length ? `<span class="chip">还有 ${ids.length - show.length} 个，可直接输入</span>` : "");
+
+  const cur = () => document.getElementById("aiModel").value.trim();
+  const sync = () => wrap.querySelectorAll(".chip[data-model]").forEach(b =>
+    b.classList.toggle("hit", b.dataset.model === cur()));
+
+  wrap.querySelectorAll(".chip[data-model]").forEach(b => {
+    b.onclick = () => {
+      const input = document.getElementById("aiModel");
+      input.value = b.dataset.model;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      sync();
+      document.getElementById("aiMsg").textContent = "已选模型 " + b.dataset.model + "，可以点「用 AI 重新打分」。";
+    };
+  });
+
+  sync();
+  box.style.display = "";
+}
+
 /* 拉 /models 列出可用模型，直接解决“模型名写错”这类 400 */
 async function probeAiModels() {
   const msg = document.getElementById("aiMsg");
@@ -1030,10 +1070,8 @@ async function probeAiModels() {
       .map(x => (typeof x === "string" ? x : x.id || x.name || x.model)).filter(Boolean);
     if (!ids.length) { lastErr = "返回里没有模型列表"; continue; }
 
-    document.getElementById("aiModelList").innerHTML =
-      ids.map(i => `<option value="${String(i).replace(/"/g, "&quot;")}"></option>`).join("");
-    msg.textContent = "找到 " + ids.length + " 个模型（" + ids.slice(0, 3).join(" / ")
-      + (ids.length > 3 ? " …" : "") + "），点模型输入框可下拉选。";
+    renderModelPick(ids);
+    msg.textContent = "找到 " + ids.length + " 个模型，点下面任意一个标签即可填入模型框。";
     return;
   }
   msg.textContent = "拉取失败：" + lastErr + "。可以手填模型名。";
@@ -1191,6 +1229,8 @@ document.getElementById("btnAiClear").onclick = () => {
   state.ai = { base: "", model: "", key: "" };
   LS.del("resume.ai");
   updateAiState();
+  document.getElementById("aiModelPick").innerHTML = "";
+  document.getElementById("aiModelBox").style.display = "none";
   document.getElementById("aiMsg").textContent = "已清除本地配置。";
 };
 
@@ -1203,6 +1243,15 @@ document.getElementById("btnAiClear").onclick = () => {
     };
     LS.set("resume.ai", state.ai);
     updateAiState();
+    // 手改了模型名，标签的高亮跟着走
+    const cur = state.ai.model;
+    document.querySelectorAll("#aiModelPick .chip[data-model]").forEach(b =>
+      b.classList.toggle("hit", b.dataset.model === cur));
+    // 换了接口地址，之前那家的模型列表就不再适用
+    if (id === "aiBase") {
+      document.getElementById("aiModelPick").innerHTML = "";
+      document.getElementById("aiModelBox").style.display = "none";
+    }
   });
 });
 
