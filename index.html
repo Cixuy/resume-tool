@@ -14,12 +14,12 @@
          background: var(--bg); color: var(--ink); }
 
   .topbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center;
-            justify-content: space-between; gap: 16px; padding: 12px 24px;
+            justify-content: flex-start; gap: 16px; padding: 12px 24px;
             background: #fff; border-bottom: 1px solid var(--line); }
   .brand { display: flex; align-items: baseline; gap: 10px; }
   .brand h1 { font-size: 16px; margin: 0; font-weight: 600; }
   .brand span { font-size: 12px; color: var(--muted); }
-  .actions { display: flex; gap: 8px; }
+  .actions { display: flex; gap: 8px; margin-left: auto; }
   button { font-family: inherit; font-size: 13px; padding: 7px 14px; border-radius: 6px;
            border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
   button:hover { border-color: #c9cdd4; }
@@ -145,11 +145,47 @@
     body.drawer-open .layout { padding-right: 24px; grid-template-columns: 400px minmax(0, 1fr); }
   }
 
+
+  /* ---------- 顶部视图切换 ---------- */
+  .viewnav { display: flex; gap: 4px; background: #f2f3f5; border-radius: 8px; padding: 3px; }
+  .viewnav button { font-size: 12.5px; padding: 5px 14px; border-radius: 6px; border: none;
+                    background: transparent; color: var(--muted); }
+  .viewnav button.on { background: #fff; color: var(--text); font-weight: 600;
+                       box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+  body[data-view="mj"] .layout { display: none; }
+
+  /* ---------- 面经页 ---------- */
+  .brand span { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body[data-view="mj"] .actions { display: none; }
+  .mj { display: none; grid-template-columns: 380px minmax(0, 1fr); gap: 20px;
+        padding: 20px 24px 60px; align-items: start; }
+  body[data-view="mj"] .mj { display: grid; }
+  .mj-list { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow: auto; }
+  .mj-item { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; cursor: pointer; }
+  .mj-item:hover { border-color: #c9cdd4; }
+  .mj-item.on { border-color: var(--accent); background: #f8faff; }
+  .mj-item .co { font-size: 13px; font-weight: 600; }
+  .mj-item .meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .mj-stats { display: flex; gap: 18px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .mj-stats b { font-size: 20px; color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 3px; }
+  .mj-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .mj-cols .fld { margin-bottom: 10px; }
+  .mj-qrow { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+  .mj-qrow .idx { font-size: 11px; color: var(--faint); padding-top: 8px; min-width: 18px; }
+  .mj-qrow input { flex: 1; }
+  .mj-del { font-size: 11px; padding: 4px 8px; }
+  .top-q { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  .top-q .chip { cursor: default; }
+  .mj-empty { font-size: 12.5px; color: var(--muted); padding: 14px 0; }
+  @media print { .mj { display: none !important; } .viewnav { display: none !important; } }
   .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
   .warn { color: #b45309; }
 
   @media print {
     @page { size: A4; margin: 0; }
+    /* 在面经页按打印，也要打简历而不是空白 */
+    body[data-view="mj"] .layout { display: block; }
+    body[data-view="mj"] .mj { display: none; }
     body { background: #fff; }
     .topbar, .layout > .left { display: none !important; }
     .layout { display: block; padding: 0; }
@@ -215,8 +251,12 @@
 
 <div class="topbar">
   <div class="brand">
-    <h1>简历编排工具</h1>
-    <span id="statusText">左侧粘 JD，右侧直接编辑</span>
+    <h1>求职工作台</h1>
+    <span id="statusText">左侧粘 JD，点简历模块在右侧填写</span>
+  </div>
+  <div class="viewnav" id="viewNav">
+    <button data-view="resume" class="on">简历</button>
+    <button data-view="mj">面经</button>
   </div>
   <div class="actions">
     <button id="btnSample" class="mini">示例 JD</button>
@@ -226,6 +266,82 @@
     <button id="btnPdf" class="primary">导出 PDF</button>
   </div>
 </div>
+
+  <section class="mj" id="viewMj">
+    <div>
+      <div class="panel">
+        <h2>按公司找面经 <em>跳到平台搜</em></h2>
+        <div class="row2">
+          <div><label>公司</label><input id="mjCo" placeholder="字节跳动"></div>
+          <div><label>岗位</label><input id="mjRole" placeholder="Java 后端"></div>
+        </div>
+        <div class="chips" id="mjPlatforms" style="margin-top:10px">
+          <button class="chip" data-p="nc">牛客</button>
+          <button class="chip" data-p="mm">脉脉</button>
+          <button class="chip" data-p="zh">知乎</button>
+          <button class="chip" data-p="csdn">CSDN</button>
+          <button class="chip" data-p="bing">必应</button>
+        </div>
+        <div class="hint" style="margin-top:8px">
+          平台都禁止跨域抓取，这里生成带关键词的搜索页；看到有用的内容把正文复制到下面。
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>导入面经 <em>链接 / 正文</em></h2>
+        <label>链接（可选）</label>
+        <input id="mjUrl" placeholder="https://www.nowcoder.com/discuss/...">
+        <label>面经正文</label>
+        <textarea id="mjRaw" rows="7" placeholder="把面经正文整段粘进来"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="mini" id="mjExtract">从正文提题</button>
+          <button class="mini" id="mjAi">用 AI 提炼</button>
+          <button class="mini" id="mjFetch">试着读取链接</button>
+        </div>
+        <div class="hint" id="mjMsg"></div>
+      </div>
+
+      <div class="panel">
+        <h2>我的面经 <em id="mjCount">0 条</em></h2>
+        <div class="mj-list" id="mjList"></div>
+        <button class="mini" id="mjNew" style="margin-top:10px">新建一条</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>高频考点 <em id="mjTopNote"></em></h2>
+        <div class="mj-stats" id="mjStats"></div>
+        <div class="top-q" id="mjTop"></div>
+        <div class="hint" id="mjTopHint"></div>
+      </div>
+
+      <div class="panel">
+        <h2>面经详情 <em id="mjEditState">新建</em></h2>
+        <div class="mj-cols">
+          <div><label>公司</label><input id="e_co" placeholder="字节跳动"></div>
+          <div><label>岗位</label><input id="e_role" placeholder="Java 后端"></div>
+          <div><label>日期</label><input id="e_date" placeholder="2026/11/10"></div>
+          <div><label>轮次</label>
+            <select id="e_round"><option>一面</option><option>二面</option><option>三面</option>
+              <option>HR 面</option><option>综合</option></select>
+          </div>
+        </div>
+        <label>来源链接</label>
+        <input id="e_url" placeholder="可留空">
+        <label>问题清单（一行一题）</label>
+        <textarea id="e_qs" rows="9" placeholder="讲讲 Redis 的持久化&#10;为什么用 MQ 削峰"></textarea>
+        <label>总结 / 复盘</label>
+        <textarea id="e_note" rows="4" placeholder="哪块答得不好、下次怎么补"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+          <button class="primary" id="e_save">保存</button>
+          <button class="mini" id="e_del">删除</button>
+          <button class="mini" id="e_md">复制为 Markdown</button>
+          <span class="hint" id="e_msg"></span>
+        </div>
+      </div>
+    </div>
+  </section>
 
 <div class="overlay" id="ivOverlay">
   <div class="sheet">
@@ -2179,9 +2295,286 @@ ${groups}
     `面试准备-${(PROFILE.intent || "通用").replace(/[\s\/]/g, "")}.doc`);
 };
 
+/* ------------------------------------------------------------------
+   面经：按公司搜、导入链接或正文、自己写、汇总高频考点
+------------------------------------------------------------------ */
+const MJ = {
+  list: LS.get("resume.mj", []),
+  editing: null,
+  msg: ""
+};
+
+const MJ_PLATFORM = {
+  nc: (q) => `https://www.nowcoder.com/search?query=${encodeURIComponent(q)}&type=post`,
+  mm: (q) => `https://cn.bing.com/search?q=${encodeURIComponent("site:maimai.cn " + q)}`,
+  zh: (q) => `https://www.zhihu.com/search?type=content&q=${encodeURIComponent(q)}`,
+  csdn: (q) => `https://so.csdn.net/so/search?q=${encodeURIComponent(q)}`,
+  bing: (q) => `https://cn.bing.com/search?q=${encodeURIComponent(q)}`
+};
+
+function mjQuery() {
+  const co = (document.getElementById("mjCo").value || "").trim();
+  const role = (document.getElementById("mjRole").value || "").trim();
+  const kw = [co, role, "面经"].filter(Boolean).join(" ");
+  return kw || "面经";
+}
+
+/* 从正文里拆问题：问号结尾，或以「讲讲/说说/为什么/如何」这类开头 */
+function mjExtract(text) {
+  const lines = String(text || "").split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const out = [];
+  for (let l of lines) {
+    l = l.replace(/^[\s>]*(\d+[.、)）]|[-*•·])\s*/, "").trim();
+    if (l.length < 5 || l.length > 120) continue;
+    if (/[？?]\s*$/.test(l) || /^(问[:：]|问题[:：]|Q\d*[:：]|讲讲|说说|介绍|为什么|如何|怎么|是否|有没有|谈一下|聊一下)/i.test(l)) {
+      out.push(l.trim());
+    }
+  }
+  const seen = new Set();
+  return out.filter(q => {
+    const k = q.replace(/[\s，,。.]/g, "");
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 80);
+}
+
+/* 给一个问题打技术标签，用的是简历工具里那张技术词表 */
+function mjTags(q) {
+  const lower = String(q).toLowerCase();
+  const hit = [];
+  TECH_VOCAB.forEach(t => {
+    if (kwHit(lower, t.toLowerCase())) hit.push(t);
+  });
+  return hit;
+}
+
+function mjAllTags() {
+  const map = new Map();
+  MJ.list.forEach(item => {
+    (item.qs || []).forEach(q => {
+      mjTags(q).forEach(t => map.set(t, (map.get(t) || 0) + 1));
+    });
+  });
+  return [...map.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+function mjRepeatQuestions() {
+  const map = new Map();
+  MJ.list.forEach(item => (item.qs || []).forEach(q => {
+    const k = q.replace(/[\s，,。.？?]/g, "");
+    const old = map.get(k) || { q, n: 0 };
+    old.n++;
+    map.set(k, old);
+  }));
+  return [...map.values()].filter(x => x.n > 1).sort((a, b) => b.n - a.n);
+}
+
+function renderMj() {
+  // 列表
+  const list = document.getElementById("mjList");
+  document.getElementById("mjCount").textContent = MJ.list.length + " 条";
+  if (!MJ.list.length) {
+    list.innerHTML = `<div class="mj-empty">还没有面经。上面搜到内容后粘正文，或者点「新建一条」自己写。</div>`;
+  } else {
+    list.innerHTML = MJ.list.map(it => `
+      <div class="mj-item${MJ.editing === it.id ? " on" : ""}" data-id="${it.id}">
+        <div class="co">${edEsc(it.co || "未填公司")} · ${edEsc(it.role || "未填岗位")}</div>
+        <div class="meta">${edEsc(it.date || "")} ${edEsc(it.round || "")} · ${(it.qs || []).length} 题</div>
+      </div>`).join("");
+  }
+
+  // 统计
+  const tags = mjAllTags();
+  const repeat = mjRepeatQuestions();
+  const cos = new Set(MJ.list.map(x => x.co).filter(Boolean));
+  document.getElementById("mjStats").innerHTML = `
+    <span><b>${MJ.list.length}</b>条面经</span>
+    <span><b>${cos.size}</b>家公司</span>
+    <span><b>${MJ.list.reduce((a, x) => a + (x.qs || []).length, 0)}</b>道题</span>
+    <span><b>${repeat.length}</b>道重复出现</span>`;
+
+  document.getElementById("mjTop").innerHTML = tags.length
+    ? tags.slice(0, 14).map(([t, n]) => `<span class="chip${n > 1 ? " hit" : ""}">${edEsc(t)} ×${n}</span>`).join("")
+    : "";
+  document.getElementById("mjTopNote").textContent = tags.length ? "按出现次数排" : "";
+  document.getElementById("mjTopHint").textContent = repeat.length
+    ? "重复最多：" + repeat.slice(0, 3).map(x => `「${x.q}」×${x.n}`).join("　")
+    : (MJ.list.length ? "还没有重复出现的问题，多攒几条才能看出高频。" : "");
+
+  // 详情表单
+  const cur = MJ.list.find(x => x.id === MJ.editing) || null;
+  document.getElementById("mjEditState").textContent = cur ? "编辑中" : "新建";
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v == null ? "" : v; };
+  set("e_co", cur ? cur.co : document.getElementById("mjCo").value);
+  set("e_role", cur ? cur.role : document.getElementById("mjRole").value);
+  set("e_date", cur ? cur.date : new Date().toISOString().slice(0, 10).replace(/-/g, "/"));
+  set("e_round", cur ? cur.round : "一面");
+  set("e_url", cur ? cur.url : document.getElementById("mjUrl").value);
+  set("e_qs", cur ? (cur.qs || []).join("\n") : "");
+  set("e_note", cur ? cur.note : "");
+  document.getElementById("e_msg").textContent = MJ.msg;
+}
+
+function mjSaveEntry() {
+  const qs = (document.getElementById("e_qs").value || "")
+    .split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const co = (document.getElementById("e_co").value || "").trim();
+  const role = (document.getElementById("e_role").value || "").trim();
+  if (!co && !role && !qs.length) {
+    document.getElementById("e_msg").textContent = "至少填公司或岗位，或者一条问题";
+    return;
+  }
+  const data = {
+    id: MJ.editing || ("mj" + Date.now()),
+    co, role,
+    date: (document.getElementById("e_date").value || "").trim(),
+    round: document.getElementById("e_round").value,
+    url: (document.getElementById("e_url").value || "").trim(),
+    qs,
+    note: (document.getElementById("e_note").value || "").trim(),
+    updated: new Date().toISOString().slice(0, 10)
+  };
+  const i = MJ.list.findIndex(x => x.id === data.id);
+  if (i >= 0) MJ.list[i] = data; else MJ.list.unshift(data);
+  MJ.editing = data.id;
+  LS.set("resume.mj", MJ.list);
+  MJ.msg = "已保存";
+  renderMj();
+  setTimeout(() => { MJ.msg = ""; const el = document.getElementById("e_msg"); if (el) el.textContent = ""; }, 1600);
+}
+
+/* 视图切换 */
+document.getElementById("viewNav").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-view]");
+  if (!b) return;
+  const v = b.dataset.view;
+  document.body.dataset.view = v;
+  document.querySelectorAll("#viewNav button").forEach(x => x.classList.toggle("on", x === b));
+  document.getElementById("statusText").textContent = v === "mj"
+    ? "面经：搜、导入、自己写，都会汇总到高频考点"
+    : "左侧粘 JD，点简历模块在右侧填写";
+  if (v === "mj") renderMj();
+});
+
+/* 平台搜索 */
+document.getElementById("mjPlatforms").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-p]");
+  if (!b) return;
+  const url = MJ_PLATFORM[b.dataset.p](mjQuery());
+  window.open(url, "_blank", "noopener");
+});
+
+/* 从正文提题 */
+document.getElementById("mjExtract").onclick = () => {
+  const raw = document.getElementById("mjRaw").value || "";
+  const qs = mjExtract(raw);
+  if (!qs.length) {
+    document.getElementById("mjMsg").textContent = "没拆出问题：正文里通常每行一题，或带问号。";
+    return;
+  }
+  document.getElementById("e_qs").value = qs.join("\n");
+  document.getElementById("e_url").value = document.getElementById("mjUrl").value || "";
+  MJ.msg = "";
+  renderMj();
+  document.getElementById("e_qs").value = qs.join("\n");
+  document.getElementById("mjMsg").textContent = `拆出 ${qs.length} 道题，已填到右侧「问题清单」，点保存入库。`;
+};
+
+/* 试着直接读链接（多数站点会跨域拦截，失败就让用户粘正文） */
+document.getElementById("mjFetch").onclick = async () => {
+  const url = (document.getElementById("mjUrl").value || "").trim();
+  const msg = document.getElementById("mjMsg");
+  if (!url) { msg.textContent = "先填链接。"; return; }
+  msg.textContent = "读取中…";
+  try {
+    const resp = await fetch(url, { mode: "cors" });
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const text = await resp.text();
+    const plain = text.replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, "\n")
+      .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+      .split(/\n+/).map(s => s.trim()).filter(Boolean).join("\n");
+    document.getElementById("mjRaw").value = plain.slice(0, 20000);
+    const qs = mjExtract(plain);
+    msg.textContent = qs.length
+      ? `读到了 ${plain.length} 字，拆出 ${qs.length} 道题，点「从正文提题」写入清单。`
+      : `读到了 ${plain.length} 字，但没拆出问题，可以手动挑。`;
+  } catch (e) {
+    msg.textContent = "读不到（多平台禁止跨域访问）：" + (e.message || e)
+      + "。把页面正文复制到上面文本框，再点「从正文提题」。";
+  }
+};
+
+/* 用 AI 提炼 */
+document.getElementById("mjAi").onclick = async () => {
+  const btn = document.getElementById("mjAi");
+  const msg = document.getElementById("mjMsg");
+  const raw = (document.getElementById("mjRaw").value || "").trim();
+  if (!raw) { msg.textContent = "先把面经正文粘进来。"; return; }
+  if (!aiReady()) { msg.textContent = "先在左边「AI 分析」里配好接口、模型和密钥。"; return; }
+
+  btn.disabled = true; msg.textContent = "提炼中…";
+  const sys = "你是面试复盘助手。从下面的面经正文里，抽出所有被问到的技术/项目问题，"
+    + "去掉客套和流程描述，每题一行，保留提问者的原意。只返回 JSON：{\"items\":[{\"q\":\"问题\"}]}";
+  const parse = (data) => {
+    let text = (data.choices && data.choices[0] && data.choices[0].message
+      && data.choices[0].message.content) || "";
+    if (Array.isArray(text)) text = text.map(t => t.text || "").join("");
+    const str = String(text);
+    const a = str.indexOf("{"), b = str.lastIndexOf("}");
+    if (a < 0 || b <= a) return null;
+    let obj = null;
+    try { obj = JSON.parse(str.slice(a, b + 1)); } catch (_) { return null; }
+    const items = (obj.items || []).map(x => String(x.q || "").trim()).filter(Boolean);
+    return items.length ? items : null;
+  };
+  const r = await aiAsk([{ role: "system", content: sys },
+                         { role: "user", content: raw.slice(0, 6000) }], parse);
+  btn.disabled = false;
+  if (!r.ok) { msg.textContent = "提炼失败：" + r.err; return; }
+  document.getElementById("e_qs").value = r.map.join("\n");
+  document.getElementById("e_url").value = document.getElementById("mjUrl").value || "";
+  msg.textContent = `AI 提炼出 ${r.map.length} 道题，已填入问题清单。`;
+};
+
+/* 列表点选 / 新建 / 保存 / 删除 / 复制 */
+document.getElementById("mjList").addEventListener("click", (e) => {
+  const it = e.target.closest("[data-id]");
+  if (!it) return;
+  MJ.editing = it.dataset.id;
+  MJ.msg = "";
+  renderMj();
+});
+document.getElementById("mjNew").onclick = () => { MJ.editing = null; MJ.msg = ""; renderMj(); };
+document.getElementById("e_save").onclick = mjSaveEntry;
+document.getElementById("e_del").onclick = () => {
+  if (!MJ.editing) { document.getElementById("e_msg").textContent = "还没保存过"; return; }
+  MJ.list = MJ.list.filter(x => x.id !== MJ.editing);
+  MJ.editing = null;
+  LS.set("resume.mj", MJ.list);
+  renderMj();
+  document.getElementById("e_msg").textContent = "已删除";
+};
+document.getElementById("e_md").onclick = async () => {
+  const co = document.getElementById("e_co").value || "";
+  const role = document.getElementById("e_role").value || "";
+  const qs = document.getElementById("e_qs").value || "";
+  const note = document.getElementById("e_note").value || "";
+  const md = `## ${co} ${role}\n\n${qs.split(/\n+/).filter(Boolean).map(q => "- " + q).join("\n")}\n\n${note}`;
+  try {
+    await navigator.clipboard.writeText(md);
+    document.getElementById("e_msg").textContent = "Markdown 已复制";
+  } catch (_) {
+    document.getElementById("e_msg").textContent = "复制失败，检查浏览器权限";
+  }
+};
+
 /* 初始化：上次填过的 JD、选中的项目都会恢复，不用重新粘一遍。
    没有 JD 时先放一套通用组合，粘上 JD 后整页会被重算。 */
 updateAiState();
+document.body.dataset.view = "resume";
 
 const saved = state.selected.filter(id => PROJECTS.some(p => p.id === id));
 if (state.jd) {
