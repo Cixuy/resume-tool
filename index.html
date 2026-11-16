@@ -109,9 +109,41 @@
   li { font-size: .933em; margin-bottom: calc(1.5px * var(--fill)); line-height: var(--lh); }
   li b { font-weight: 600; }
 
-  [contenteditable="true"] { outline: none; border-radius: 3px; }
-  [contenteditable="true"]:hover { background: #f6f8ff; box-shadow: 0 0 0 1px #dbeafe inset; }
-  [contenteditable="true"]:focus { background: #fff; box-shadow: 0 0 0 1px var(--accent) inset; }
+  /* 简历只读；红色是还没填的关键信息，点模块到右侧面板填 */
+  .paper [data-sec] { cursor: pointer; }
+  .paper .sec:hover .sec-title, .paper .head:hover h1 { color: var(--accent); }
+  .paper .proj-item:hover { background: #f8faff; box-shadow: 0 0 0 6px #f8faff; border-radius: 2px; }
+  .paper .missing { color: #dc2626; border-bottom: 1px dashed #fca5a5; }
+  .edit-hint { display: none; font-size: 9pt; font-weight: 400; color: var(--accent); margin-left: 6px; }
+  .paper .sec:hover .edit-hint, .paper .head:hover .edit-hint { display: inline; }
+
+  /* 右侧编辑抽屉 */
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 396px; background: #fff;
+            border-left: 1px solid var(--line); box-shadow: -6px 0 24px rgba(15,23,42,.08);
+            transform: translateX(102%); transition: transform .22s ease; z-index: 70;
+            display: flex; flex-direction: column; }
+  .drawer.on { transform: translateX(0); }
+  .drawer-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px;
+                 border-bottom: 1px solid var(--line); }
+  .drawer-head strong { font-size: 13.5px; flex: 1; }
+  .drawer-tabs { display: flex; gap: 4px; padding: 10px 16px 0; flex-wrap: wrap; }
+  .drawer-tabs button { font-size: 12px; padding: 4px 10px; border-radius: 5px; }
+  .drawer-tabs button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .drawer-body { flex: 1; overflow: auto; padding: 8px 16px 16px; }
+  .drawer-foot { border-top: 1px solid var(--line); padding: 12px 16px; display: flex;
+                 gap: 8px; align-items: center; }
+  .drawer-foot .hint { flex: 1; text-align: right; }
+  .fld { margin-bottom: 12px; }
+  .fld label { margin: 0 0 4px; }
+  .fld input, .fld textarea, .fld select { width: 100%; }
+  .fld .missing-tip { font-size: 11px; color: #dc2626; margin-top: 2px; }
+  /* 抽屉打开时左栏收窄、预览区可横向滚动，保证 A4 不被压变形 */
+  body.drawer-open .layout { padding-right: 412px; grid-template-columns: 300px minmax(0, 1fr); }
+  body.drawer-open .preview-wrap { overflow-x: auto; padding-bottom: 8px; }
+  @media (max-width: 1180px) {
+    .drawer { width: 100%; }
+    body.drawer-open .layout { padding-right: 24px; grid-template-columns: 400px minmax(0, 1fr); }
+  }
 
   .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
   .warn { color: #b45309; }
@@ -215,6 +247,20 @@
   </div>
 </div>
 
+<aside class="drawer" id="editDrawer">
+  <div class="drawer-head">
+    <strong id="drawerTitle">编辑信息</strong>
+    <button class="mini" id="drawerClose">关闭</button>
+  </div>
+  <div class="drawer-tabs" id="drawerTabs"></div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot">
+    <button class="primary" id="drawerSave">保存</button>
+    <button class="mini" id="drawerReset">恢复默认</button>
+    <span class="hint" id="drawerMsg"></span>
+  </div>
+</aside>
+
 <div class="layout">
   <div class="left">
     <div class="panel">
@@ -290,7 +336,7 @@
 
   <div class="preview-wrap">
     <div class="hint" style="text-align:center;margin-bottom:8px">
-      右侧内容可直接点击修改，改动自动保存在本地
+      简历只读预览；红色是还没填的关键信息，点任意模块到右侧填写
     </div>
     <div class="paper" id="paper"></div>
   </div>
@@ -728,9 +774,12 @@ function isPlaceholder(v) {
   return !String(v == null ? "" : v).trim() || /^（.*）$/.test(String(v).trim());
 }
 
-function ce(k, value) {
-  const v = value == null ? "" : value;
-  return `<span contenteditable="true" data-k="${k}"${isPlaceholder(v) ? ' class="ph"' : ""}>${v}</span>`;
+/* 简历上的值只读展示；没填的（空或（占位））显示成红色，提醒去右侧补 */
+function ms(value, hint) {
+  const v = String(value == null ? "" : value).trim();
+  if (!v) return `<span class="missing">${hint || "待填写"}</span>`;
+  if (/^（.*）$/.test(v)) return `<span class="missing">${v}</span>`;
+  return v;
 }
 
 /* 把还要自己填的地方单独列出来，避免漏填就导出 */
@@ -759,12 +808,7 @@ function renderTodo() {
       const b = document.createElement("button");
       b.className = "chip";
       b.textContent = label;
-      b.onclick = () => {
-        const el = document.querySelector(`#paper [data-k="${k}"]`);
-        if (!el) return;
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.focus();
-      };
+      b.onclick = () => openEditor(k.indexOf("edu.") === 0 || k === "extra" ? "edu" : "basic");
       box.appendChild(b);
     }
   }
@@ -834,65 +878,60 @@ function renderPaper() {
   const projectsHtml = picked.map(p => {
     const ov = state.overrides[p.id] || {};
     const val = (key, fallback) => (ov[key] != null ? ov[key] : fallback);
-    const pe = (key, text, cls) =>
-      `<span${cls ? ` class="${cls}"` : ""} contenteditable="true" data-pid="${p.id}" data-i="${key}">${text}</span>`;
-
-    const items = p.bullets.map((b, i) => {
-      const text = ov["b" + i] != null ? ov["b" + i] : b;
-      return `<li contenteditable="true" data-pid="${p.id}" data-i="${i}">${text}</li>`;
-    }).join("");
-    const rawSite = val("url", p.url);
-    const site = /^https?:\/\//.test(rawSite) ? rawSite : "https://" + rawSite;
+    const items = p.bullets.map((b, i) => `<li>${ov["b" + i] != null ? ov["b" + i] : b}</li>`).join("");
+    const site = val("url", p.url);
+    const href = /^https?:\/\//.test(site) ? site : "https://" + site;
     return `
-      <div class="proj-item">
+      <div class="proj-item" data-sec="proj" data-pid="${p.id}" title="点击编辑这个项目">
         <div class="proj-title">
-          <span class="date">${pe("period", val("period", p.period))}</span>
-          ${pe("name", val("name", p.name))}
-          <span class="role">　${pe("role", val("role", p.role))}</span>
+          <span class="date">${val("period", p.period)}</span>
+          <span>${val("name", p.name)}</span>
+          <span class="role">　${val("role", p.role)}</span>
         </div>
-        <div class="proj-desc" contenteditable="true" data-pid="${p.id}" data-i="desc">${val("desc", p.desc)}</div>
-        <div class="proj-url">项目地址：<a href="${site}" target="_blank" data-pid="${p.id}" data-i="url-link"><span contenteditable="true" data-pid="${p.id}" data-i="url">${site.replace("https://", "")}</span></a></div>
-        <div class="proj-stack"><b>技术栈</b>：${pe("stack", val("stack", p.stack))}</div>
+        <div class="proj-desc">${val("desc", p.desc)}</div>
+        <div class="proj-url">项目地址：<a href="${href}" target="_blank">${href.replace("https://", "")}</a></div>
+        <div class="proj-stack"><b>技术栈</b>：${val("stack", p.stack)}</div>
         <ul>${items}</ul>
       </div>`;
   }).join("");
 
   paper.innerHTML = `
-    <div class="head">
+    <div class="head" data-sec="basic" title="点击编辑基本信息">
       <div class="head-photo${state.photo ? "" : " empty"}" id="photoSlot">
         ${state.photo
           ? `<img src="${state.photo}" alt="照片"><button class="photo-del" id="photoDel" title="移除">×</button>`
           : `<span>点击<br>上传照片</span>`}
       </div>
-      <h1>${ce("name", PROFILE.name)}</h1>
+      <h1>${ms(PROFILE.name, "点击填写姓名")}<span class="edit-hint">编辑</span></h1>
       <div class="contact">
-        <span>出生年月：${ce("birth", PROFILE.birth)}</span>
-        <span>手机号：${ce("phone", PROFILE.phone)}</span>
-        <span>邮箱：${ce("mail", PROFILE.mail)}</span>
-        <span>个人主页：<a href="https://${PROFILE.home}" target="_blank">${ce("home", PROFILE.home)}</a></span>
+        <span>出生年月：${ms(PROFILE.birth)}</span>
+        <span>手机号：${ms(PROFILE.phone)}</span>
+        <span>邮箱：${ms(PROFILE.mail)}</span>
+        <span>个人主页：${isPlaceholder(PROFILE.home)
+          ? ms(PROFILE.home)
+          : `<a href="https://${PROFILE.home}" target="_blank">${PROFILE.home}</a>`}</span>
       </div>
-      <div class="intent"><b>求职意向：</b>${ce("intent", PROFILE.intent)}</div>
+      <div class="intent"><b>求职意向：</b>${ms(PROFILE.intent)}</div>
     </div>
 
-    <div class="sec">
-      <div class="sec-title">教育经历</div>
+    <div class="sec" data-sec="edu" title="点击编辑教育经历">
+      <div class="sec-title">教育经历<span class="edit-hint">编辑</span></div>
       <div class="edu-line">
-        <span class="date">${ce("edu.period", PROFILE.edu.period)}</span>
-        <span><b>${ce("edu.school", PROFILE.edu.school)}</b>　${ce("edu.major", PROFILE.edu.major)} · ${ce("edu.degree", PROFILE.edu.degree)}${gradTag()}</span>
+        <span class="date">${ms(PROFILE.edu.period)}</span>
+        <span><b>${ms(PROFILE.edu.school)}</b>　${ms(PROFILE.edu.major)} · ${ms(PROFILE.edu.degree)}${gradTag()}</span>
       </div>
-      <div class="muted">主修课程：${ce("edu.courses", PROFILE.edu.courses)}</div>
-      <div class="muted">${ce("extra", PROFILE.extra)}</div>
+      <div class="muted">主修课程：${ms(PROFILE.edu.courses)}</div>
+      <div class="muted">${ms(PROFILE.extra, "（可填四六级、竞赛、开源等）")}</div>
     </div>
 
-    <div class="sec">
-      <div class="sec-title">项目经历</div>
+    <div class="sec" data-sec="proj" title="点击编辑项目">
+      <div class="sec-title">项目经历<span class="edit-hint">编辑</span></div>
       ${projectsHtml}
     </div>
 
-    <div class="sec">
-      <div class="sec-title">专业技能</div>
-      <ul>${currentSkills().map((x, i) =>
-        `<li contenteditable="true" data-skill="${i}">${x}</li>`).join("")}</ul>
+    <div class="sec" data-sec="skills" title="点击编辑专业技能">
+      <div class="sec-title">专业技能<span class="edit-hint">编辑</span></div>
+      <ul>${currentSkills().map(x => `<li>${x}</li>`).join("")}</ul>
     </div>
   `;
 
@@ -900,70 +939,249 @@ function renderPaper() {
 }
 
 /* ------------------------------------------------------------------
-   就地编辑：写回状态并落盘
+   右侧编辑抽屉：简历只读，点模块在这里填
 ------------------------------------------------------------------ */
-/* 就地编辑改了文字后，内容高度会变，重新算一次铺满比例 */
-let refitTimer = null;
-document.addEventListener("input", (e) => {
-  if (!e.target.closest("[contenteditable]")) return;
-  clearTimeout(refitTimer);
-  refitTimer = setTimeout(() => { if (document.getElementById("paper")) fitPaper(); }, 350);
-});
+const ED = { tab: "basic", pid: null };
 
-document.addEventListener("input", (e) => {
-  const el = e.target.closest("[contenteditable]");
-  if (!el) return;
+const ED_TABS = [
+  ["basic", "基本信息"],
+  ["edu", "教育经历"],
+  ["proj", "项目经历"],
+  ["skills", "专业技能"]
+];
 
-  const sk = el.dataset.skill;
-  if (sk != null) {
-    // 手改了技能行：先把手改前的整组拷一份，再替换这一行
-    if (!state.skillsEdit) state.skillsEdit = currentSkills().slice();
-    state.skillsEdit[Number(sk)] = el.innerHTML;
-    LS.set("resume.skills", state.skillsEdit);
-    return;
-  }
+function edEsc(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 
-  const pid = el.dataset.pid;
-  if (pid) {
-    const i = el.dataset.i;
-    if (!state.overrides[pid]) state.overrides[pid] = {};
-    const key = /^\d+$/.test(i) ? "b" + i : i;
-    state.overrides[pid][key] = el.innerHTML;
-    LS.set("resume.overrides", state.overrides);
+function edInput(label, id, value, opts) {
+  const o = opts || {};
+  const miss = o.required && isPlaceholder(value);
+  const tag = o.multiline
+    ? `<textarea id="${id}" rows="${o.rows || 3}">${edEsc(value)}</textarea>`
+    : `<input type="text" id="${id}" value="${edEsc(value)}" placeholder="${edEsc(o.ph || "")}">`;
+  return `<div class="fld"><label>${label}</label>${tag}
+    ${miss ? '<div class="missing-tip">未填</div>' : ""}</div>`;
+}
 
-    // 项目地址是链接：改了文字要把 href 一起改掉，否则点开还是老地址
-    if (key === "url") {
-      const a = el.closest("a");
-      const href = el.innerText.trim();
-      if (a) a.setAttribute("href", /^https?:\/\//.test(href) ? href : "https://" + href);
+function projOf(pid) {
+  return state.selected.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean)
+    .find(p => p.id === pid) || null;
+}
+
+function edProjectId() {
+  const list = state.selected.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean);
+  if (!list.length) return null;
+  return projOf(ED.pid) ? ED.pid : list[0].id;
+}
+
+function renderEditor() {
+  const tabs = document.getElementById("drawerTabs");
+  tabs.innerHTML = ED_TABS.map(([k, label]) =>
+    `<button class="mini${ED.tab === k ? " on" : ""}" data-ed="${k}">${label}</button>`).join("");
+
+  const body = document.getElementById("drawerBody");
+  const p = PROFILE;
+  let html = "";
+
+  if (ED.tab === "basic") {
+    html = edInput("姓名", "f_name", p.name, { required: true })
+      + edInput("出生年月", "f_birth", p.birth, { required: true, ph: "2005/06" })
+      + edInput("手机号", "f_phone", p.phone, { required: true })
+      + edInput("邮箱", "f_mail", p.mail, { required: true })
+      + edInput("个人主页", "f_home", p.home, { ph: "cixuy.github.io（不用写 https）" })
+      + edInput("求职意向", "f_intent", p.intent, { required: true, ph: "粘 JD 会自动生成，也可以自己改" });
+
+  } else if (ED.tab === "edu") {
+    html = edInput("学校", "f_school", p.edu.school, { required: true })
+      + edInput("专业", "f_major", p.edu.major, { required: true })
+      + edInput("学历", "f_degree", p.edu.degree, { required: true, ph: "本科 / 硕士" })
+      + edInput("起止时间", "f_period", p.edu.period, { required: true, ph: "2023/09 - 2027/07" })
+      + `<div class="hint" style="margin:-6px 0 12px">右侧日期写到月，简历上会自动标出「X 届」</div>`
+      + edInput("主修课程", "f_courses", p.edu.courses, { required: true, multiline: true, rows: 3 })
+      + edInput("其他补充", "f_extra", p.extra, { multiline: true, rows: 2, ph: "四六级、竞赛、开源经历" });
+
+  } else if (ED.tab === "proj") {
+    const list = state.selected.map(id => PROJECTS.find(x => x.id === id)).filter(Boolean);
+    if (!list.length) {
+      html = `<div class="hint">还没有选项目。去左边「项目推荐」点两个项目。</div>`;
+    } else {
+      const pid = edProjectId();
+      const proj = projOf(pid);
+      const ov = state.overrides[pid] || {};
+      const val = (k, f) => (ov[k] != null ? ov[k] : f);
+      html = `<div class="fld"><label>正在编辑</label>
+          <select id="f_pick">${list.map(x =>
+            `<option value="${x.id}"${x.id === pid ? " selected" : ""}>${edEsc(x.name)}</option>`).join("")}</select>
+        </div>`
+        + edInput("项目名称", "f_pname", val("name", proj.name))
+        + edInput("时间", "f_pperiod", val("period", proj.period), { ph: "2026/09 - 2026/10" })
+        + edInput("担任角色", "f_prole", val("role", proj.role), { ph: "独立开发 / 核心开发" })
+        + edInput("项目地址", "f_purl", val("url", proj.url), { ph: "github.com/xxx/yyy" })
+        + edInput("技术栈", "f_pstack", val("stack", proj.stack))
+        + edInput("一句话概述", "f_pdesc", val("desc", proj.desc), { multiline: true, rows: 3 })
+        + proj.bullets.map((b, i) =>
+            edInput(`要点 ${i + 1}`, "f_b" + i, ov["b" + i] != null ? ov["b" + i] : b,
+              { multiline: true, rows: 3 })).join("");
     }
-    return;
+
+  } else if (ED.tab === "skills") {
+    const lines = currentSkills().slice();
+    if (!lines.length) {
+      html = `<div class="hint">还没有技能行，先选项目。</div>`;
+    } else {
+      html = `<div class="hint" style="margin-bottom:10px">
+          默认由选中项目自动汇总。改过之后以你改的为准，换项目或粘新 JD 会重新汇总。
+        </div>`;
+      lines.forEach((line, i) => {
+        const m = line.match(/^<b>(.*?)<\/b>：(.*)$/s);
+        const cat = m ? stripHtml(m[1]) : "";
+        const txt = m ? stripHtml(m[2]) : stripHtml(line);
+        html += `<div class="fld" style="display:grid;grid-template-columns:96px 1fr;gap:6px;align-items:start">
+          <input type="text" id="f_skc${i}" value="${edEsc(cat)}" placeholder="类别">
+          <textarea id="f_skt${i}" rows="2" placeholder="技术点，用顿号分隔">${edEsc(txt)}</textarea>
+        </div>`;
+      });
+    }
   }
 
-  const k = el.dataset.k;
-  if (!k) return;
-  const val = el.innerText.trim();
-  el.classList.toggle("ph", isPlaceholder(val));   // 填上了就把虚线去掉
+  body.innerHTML = html;
+  document.getElementById("drawerTitle").textContent =
+    (ED_TABS.find(t => t[0] === ED.tab) || [, "编辑"])[1];
+  document.getElementById("drawerReset").style.display =
+    (ED.tab === "proj" || ED.tab === "skills") ? "" : "none";
+  document.getElementById("drawerMsg").textContent = "";
 
-  if (k === "intent") {
-    // 手改的意向就地保存；标记一下，刷新页面后不再被 JD 推断覆盖
+  const pick = document.getElementById("f_pick");
+  if (pick) pick.onchange = () => { ED.pid = pick.value; renderEditor(); };
+}
+
+function openEditor(tab, pid) {
+  if (tab) ED.tab = tab;
+  if (pid) ED.pid = pid;
+  document.getElementById("editDrawer").classList.add("on");
+  document.body.classList.add("drawer-open");
+  renderEditor();
+}
+
+function closeEditor() {
+  document.getElementById("editDrawer").classList.remove("on");
+  document.body.classList.remove("drawer-open");
+}
+
+function edVal(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : "";
+}
+
+function saveEditor() {
+  const msg = document.getElementById("drawerMsg");
+
+  if (ED.tab === "basic") {
+    PROFILE.name = edVal("f_name");
+    PROFILE.birth = edVal("f_birth");
+    PROFILE.phone = edVal("f_phone");
+    PROFILE.mail = edVal("f_mail");
+    PROFILE.home = edVal("f_home").replace(/^https?:\/\//, "");
+    PROFILE.intent = edVal("f_intent");
+    state.profile.name = PROFILE.name;
+    state.profile.birth = PROFILE.birth;
+    state.profile.phone = PROFILE.phone;
+    state.profile.mail = PROFILE.mail;
+    state.profile.home = PROFILE.home;
+    state.profile.intent = PROFILE.intent;
+    // 手改过意向，就别再让 JD 推断覆盖它
     state.intentManual = true;
     LS.set("resume.intentManual", true);
-    PROFILE.intent = val;
-    state.profile.intent = val;
     saveProfile();
-    renderTodo();
+
+  } else if (ED.tab === "edu") {
+    PROFILE.edu.school = edVal("f_school");
+    PROFILE.edu.major = edVal("f_major");
+    PROFILE.edu.degree = edVal("f_degree");
+    PROFILE.edu.period = edVal("f_period");
+    PROFILE.edu.courses = edVal("f_courses");
+    PROFILE.extra = edVal("f_extra");
+    state.profile.edu = PROFILE.edu;
+    state.profile.extra = PROFILE.extra;
+    saveProfile();
+
+  } else if (ED.tab === "proj") {
+    const pid = edProjectId();
+    if (!pid) { msg.textContent = "没选项目"; return; }
+    const proj = projOf(pid);
+    const ov = state.overrides[pid] || (state.overrides[pid] = {});
+    const pairs = [
+      ["name", "f_pname"], ["period", "f_pperiod"], ["role", "f_prole"],
+      ["url", "f_purl"], ["stack", "f_pstack"], ["desc", "f_pdesc"]
+    ];
+    for (const [key, id] of pairs) {
+      const v = edVal(id);
+      const origin = proj[key] != null ? String(proj[key]) : "";
+      if (v === origin) delete ov[key]; else ov[key] = v;
+    }
+    proj.bullets.forEach((b, i) => {
+      const v = edVal("f_b" + i);
+      const origin = stripHtml(b);
+      if (v === origin) delete ov["b" + i]; else ov["b" + i] = v;
+    });
+    LS.set("resume.overrides", state.overrides);
+
+  } else if (ED.tab === "skills") {
+    const lines = [];
+    currentSkills().forEach((line, i) => {
+      const cat = edVal("f_skc" + i);
+      const txt = edVal("f_skt" + i);
+      if (!cat && !txt) return;
+      lines.push(`<b>${edEsc(cat)}</b>：${edEsc(txt)}`);
+    });
+    state.skillsEdit = lines;
+    LS.set("resume.skills", lines);
+  }
+
+  renderPaper();
+  renderTodo();
+  msg.textContent = "已保存";
+  setTimeout(() => { if (msg.textContent === "已保存") msg.textContent = ""; }, 1800);
+}
+
+function resetEditor() {
+  if (ED.tab === "proj") {
+    const pid = edProjectId();
+    if (pid) delete state.overrides[pid];
+    LS.set("resume.overrides", state.overrides);
+  } else if (ED.tab === "skills") {
+    clearSkillEdit();
+    state.skills = composeSkills(state.selected, currentOrder());
+  } else {
     return;
   }
-  if (k.indexOf("edu.") === 0) {
-    PROFILE.edu[k.slice(4)] = val;
-    state.profile.edu = PROFILE.edu;
-  } else {
-    PROFILE[k] = val;
-    state.profile[k] = val;
-  }
-  saveProfile();
-  renderTodo();
+  renderPaper();
+  renderEditor();
+  document.getElementById("drawerMsg").textContent = "已恢复默认";
+}
+
+document.getElementById("editDrawer").addEventListener("click", (e) => {
+  const tab = e.target.closest("[data-ed]");
+  if (tab) { ED.tab = tab.dataset.ed; renderEditor(); return; }
+});
+document.getElementById("drawerClose").onclick = closeEditor;
+document.getElementById("drawerSave").onclick = saveEditor;
+document.getElementById("drawerReset").onclick = resetEditor;
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.getElementById("editDrawer").classList.contains("on")) closeEditor();
+});
+
+/* 点简历上的模块 → 打开对应表单 */
+document.getElementById("paper").addEventListener("click", (e) => {
+  if (e.target.closest("#photoDel")) return;      // 删照片走自己的逻辑
+  if (e.target.closest("#photoSlot")) return;     // 上传照片走自己的逻辑
+  if (e.target.closest(".proj-url a")) return;    // 链接照常打开
+  const proj = e.target.closest('[data-sec="proj"]');
+  if (proj) { openEditor("proj", proj.dataset.pid); return; }
+  const sec = e.target.closest("[data-sec]");
+  if (sec) openEditor(sec.dataset.sec);
 });
 
 /* ------------------------------------------------------------------
@@ -997,8 +1215,6 @@ photoInput.addEventListener("change", () => {
 });
 
 document.addEventListener("click", (e) => {
-  // 项目地址在预览里是拿来改的，点上去不能直接跳走
-  if (e.target.closest('#paper [data-i="url"]')) e.preventDefault();
   if (e.target.closest("#photoDel")) {
     state.photo = null; localStorage.removeItem("resume.photo"); renderPaper(); return;
   }
