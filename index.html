@@ -103,6 +103,7 @@
   .proj-url { font-size: .857em; color: #555; }
   .proj-stack { font-size: .857em; color: #555; margin-top: calc(1px * var(--fill)); }
   .proj-stack b { font-weight: 600; color: #333; }
+  .grad { color: #555; font-size: .952em; }
   ul { margin: calc(3px * var(--fill)) 0 0; padding-left: 16px; }
   li { font-size: .933em; margin-bottom: calc(1.5px * var(--fill)); line-height: var(--lh); }
   li b { font-weight: 600; }
@@ -636,6 +637,16 @@ function ce(k, value) {
 const PAPER_TARGET = 1046;   // 正文底部落到纸张的这个位置：整页 1122.5，下方留约 2cm 白
                              // 屏幕与打印的内边距已统一为 12mm，两者版面完全一致
 
+/* 校招筛人第一眼看的就是「哪一届」，从起止时间里最后那个年份推出来，
+   省得再让人单独填一个字段 */
+function gradTag() {
+  const years = String(PROFILE.edu.period || "").match(/(19|20)\d{2}/g) || [];
+  if (!years.length) return "";
+  const y = Math.max(...years.map(Number));   // 起止时间里最晚的年份就是毕业年
+  if (y < 2000 || y > 2100) return "";
+  return `　<span class="grad">${y} 届</span>`;
+}
+
 function contentBottom() {
   const paper = document.getElementById("paper");
   const secs = paper.querySelectorAll(".sec");
@@ -719,7 +730,7 @@ function renderPaper() {
       <div class="sec-title">教育经历</div>
       <div class="edu-line">
         <span class="date">${ce("edu.period", PROFILE.edu.period)}</span>
-        <span><b>${ce("edu.school", PROFILE.edu.school)}</b>　${ce("edu.major", PROFILE.edu.major)} · ${PROFILE.edu.degree}</span>
+        <span><b>${ce("edu.school", PROFILE.edu.school)}</b>　${ce("edu.major", PROFILE.edu.major)} · ${PROFILE.edu.degree}${gradTag()}</span>
       </div>
       <div class="muted">主修课程：${ce("edu.courses", PROFILE.edu.courses)}</div>
       <div class="muted">${ce("extra", PROFILE.extra)}</div>
@@ -1097,6 +1108,7 @@ function exportWord() {
     ul { margin: ${gap(3)} 0 0 0; padding-left: 14pt; }
     li { font-size: ${fs(9.8)}; margin-bottom: ${gap(1.5)}; line-height: ${lh.toFixed(2)}; }
     .muted { color: #444; line-height: ${lh.toFixed(2)}; }
+    .grad { color: #555; }
   </style></head><body>${body}</body></html>`;
 
   download(new Blob(["\ufeff", html], { type: "application/msword" }),
