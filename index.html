@@ -105,6 +105,22 @@
     font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
     color: #1a1a1a; font-size: 10.5pt; line-height: 1.55;
   }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
+  .head-main { flex: 1; min-width: 0; }
+  .head-photo {
+    width: 84px; height: 108px; flex: none; border-radius: 4px;
+    border: 1px dashed #c9cdd4; display: grid; place-items: center;
+    cursor: pointer; overflow: hidden; position: relative;
+    font-size: 9pt; color: #9aa0a6; text-align: center; line-height: 1.4;
+    background: #fafafa;
+  }
+  .head-photo:hover { border-color: #2563eb; color: #2563eb; }
+  .head-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-del {
+    position: absolute; top: 1px; right: 1px; width: 16px; height: 16px;
+    padding: 0; font-size: 12px; line-height: 14px; border-radius: 3px;
+    border: none; background: rgba(0,0,0,.45); color: #fff; cursor: pointer;
+  }
   .paper h1 { font-size: 22pt; margin: 0 0 2px; letter-spacing: 2px; }
   .contact { font-size: 9pt; color: #444; }
   .contact span { margin-right: 12px; }
@@ -138,6 +154,8 @@
     .layout { display: block; padding: 0; }
     .preview-wrap { position: static; }
     .paper { box-shadow: none; width: 210mm; min-height: 297mm; margin: 0; padding: 14mm 16mm; }
+    .head-photo { border: none; background: transparent; }
+    .photo-del { display: none; }
   }
 </style>
 </head>
@@ -472,6 +490,7 @@ function scoreProject(proj, analysis) {
    状态
 ------------------------------------------------------------------ */
 const state = {
+  photo: null,          // dataURL，存本地 localStorage，不进仓库
   roleId: "java-backend",
   skills: [],
   selected: [],
@@ -577,14 +596,24 @@ function renderPaper() {
     </div>`).join("");
 
   paper.innerHTML = `
-    <h1>${f.name}</h1>
-    <div class="contact">
+    <div class="head">
+      <div class="head-main">
+        <h1>${f.name || "（姓名）"}</h1>
+        <div class="contact">
       <span>出生年月：${f.birth}</span>
       <span>${f.phone}</span>
       <span>${f.mail}</span>
-      <span>个人主页：<a href="https://${f.home}" target="_blank">${f.home}</a></span>
+          <span>个人主页：<a href="https://${f.home}" target="_blank">${f.home}</a></span>
+        </div>
+        <div class="intent"><b>求职意向：</b>${f.intent || "（求职意向）"}</div>
+      </div>
+      <div class="head-photo" id="photoSlot">
+        ${state.photo
+          ? `<img src="${state.photo}" alt="照片">
+             <button class="photo-del" id="photoDel" title="移除">×</button>`
+          : `<span>点击<br>上传照片</span>`}
+      </div>
     </div>
-    <div class="intent"><b>求职意向：</b>${f.intent}</div>
 
     <div class="sec">
       <div class="sec-title">教育经历</div>
@@ -612,7 +641,17 @@ function renderPaper() {
    导出 Word：用带 Word 命名空间的 HTML，Word 可直接打开并编辑
 ------------------------------------------------------------------ */
 function exportWord() {
-  const body = document.getElementById("paper").innerHTML;
+  // Word 不认 flex 布局，照片改成右浮动的 img，并去掉预览专用按钮
+  let body = document.getElementById("paper").innerHTML;
+  body = body.replace(/<button class="photo-del"[\s\S]*?<\/button>/g, "");
+  if (state.photo) {
+    body = body.replace(
+      /<div class="head-photo"[^>]*>[\s\S]*?<\/div>/,
+      `<img src="${state.photo}" style="float:right;width:84px;height:108px;object-fit:cover;margin-left:12px;">`);
+  } else {
+    body = body.replace(/<div class="head-photo"[^>]*>[\s\S]*?<\/div>/, "");
+  }
+  body = body.replace('<div class="head">', '<div>').replace('</div></div>', '</div>');
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
   <head><meta charset="utf-8">
@@ -720,6 +759,55 @@ document.getElementById("btnPdf").onclick = () => {
   document.getElementById(id).addEventListener("input", renderPaper);
 });
 
+/* ------------------------------------------------------------------
+   照片：选择后等比缩放到 300x400 以内再转 base64，
+   避免大图撑爆 localStorage（上限约 5MB）
+------------------------------------------------------------------ */
+const photoInput = document.createElement("input");
+photoInput.type = "file";
+photoInput.accept = "image/*";
+photoInput.style.display = "none";
+document.body.appendChild(photoInput);
+
+photoInput.addEventListener("change", () => {
+  const file = photoInput.files && photoInput.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 300, maxH = 400;
+      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      state.photo = canvas.toDataURL("image/jpeg", 0.86);
+      try { localStorage.setItem("resume.photo", state.photo); } catch (e) {
+        console.warn("照片过大，未能保存到本地缓存");
+      }
+      renderPaper();
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+  photoInput.value = "";
+});
+
+// 照片区与移除按钮用事件委托，避免每次渲染后重新绑定
+document.addEventListener("click", (e) => {
+  if (e.target.closest("#photoDel")) {
+    state.photo = null;
+    localStorage.removeItem("resume.photo");
+    renderPaper();
+    return;
+  }
+  if (e.target.closest("#photoSlot")) {
+    photoInput.click();
+  }
+});
+
 /* 若同目录存在 profile.js，用它填满表单（个人数据不进仓库） */
 function applyProfile() {
   const p = window.PROFILE_OVERRIDE;
@@ -734,6 +822,7 @@ function applyProfile() {
 }
 
 /* 初始化 */
+try { state.photo = localStorage.getItem("resume.photo") || null; } catch (e) { state.photo = null; }
 applyProfile();
 applyRole(state.roleId);
 renderRoles();
