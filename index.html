@@ -170,9 +170,8 @@
   /* ---------- 面经页 ---------- */
   .brand span { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   body[data-view="mj"] .actions { display: none; }
-  .mj { display: none; grid-template-columns: 380px minmax(0, 1fr); gap: 20px;
-        padding: 20px 24px 60px; align-items: start; }
-  body[data-view="mj"] .mj { display: grid; }
+
+
   .mj-list { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow: auto; }
   .mj-item { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; cursor: pointer; }
   .mj-item:hover { border-color: #c9cdd4; }
@@ -181,7 +180,9 @@
   .mj-item .meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .mj-stats { display: flex; gap: 18px; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
   .mj-stats b { font-size: 20px; color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 3px; }
-  .mj-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .mj-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .mj-cols > div { min-width: 0; }
+  .mj-cols input, .mj-cols select { width: 100%; }
   .mj-cols .fld { margin-bottom: 10px; }
   .mj-qrow { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
   .mj-qrow .idx { font-size: 11px; color: var(--faint); padding-top: 8px; min-width: 18px; }
@@ -216,9 +217,8 @@
   /* 复盘页 */
   body[data-view="rv"] .layout { display: none; }
   body[data-view="rv"] .actions { display: none; }
-  .rv { display: none; grid-template-columns: 380px minmax(0, 1fr); gap: 20px;
-        padding: 20px 24px 60px; align-items: start; }
-  body[data-view="rv"] .rv { display: grid; }
+
+
   .rv-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow: auto; }
   .drill-q { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: #fcfcfd; }
   .drill-num { font-size: 11px; color: var(--faint); margin-bottom: 6px; }
@@ -252,6 +252,8 @@
          display: flex; gap: 6px; align-items: baseline; }
   .e-q .tagm { font-size: 10.5px; color: var(--accent); background: var(--accent-soft);
                border-radius: 3px; padding: 0 5px; cursor: pointer; }
+  .e-q .eq-del { color: var(--faint); font-size: 11px; text-decoration: none; padding: 0 2px; }
+  .e-q .eq-del:hover { color: #dc2626; }
 
   /* AI 配置：全局入口 + 弹窗 */
   .ai-cfg { display: inline-flex; align-items: center; gap: 6px; }
@@ -259,6 +261,45 @@
   .ai-dot.on { background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.15); }
   .sheet.narrow { max-width: 560px; }
   .sheet-body.solo { display: block; }
+
+  /* ---------- 面经 / 复盘：统一的列表 + 工作区布局 ---------- */
+  .page { display: none; padding: 16px 24px 40px; }
+  body[data-view="mj"] #viewMj { display: block; }
+  body[data-view="rv"] #viewRv { display: block; }
+  .page-tool { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+               padding-bottom: 12px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .page-tool .grow { flex: 1; }
+  .page-body { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 16px; align-items: start; }
+  .col-list { border: 1px solid var(--line); border-radius: 10px; background: #fff;
+              display: flex; flex-direction: column; max-height: calc(100vh - 176px);
+              min-height: 460px; overflow: hidden; }
+  .list-head { display: flex; align-items: center; justify-content: space-between;
+               padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 600; }
+  .list-head em { font-style: normal; font-weight: 400; font-size: 12px; color: var(--muted); }
+  .col-main { border: 1px solid var(--line); border-radius: 10px; background: #fff;
+              min-height: 460px; }
+  .tabs2 { display: flex; gap: 2px; padding: 8px 12px 0; border-bottom: 1px solid var(--line); }
+  .tabs2 button { font-size: 12.5px; padding: 7px 14px; border: 1px solid transparent;
+                  border-bottom: none; border-radius: 6px 6px 0 0; background: transparent;
+                  color: var(--muted); cursor: pointer; }
+  .tabs2 button.on { background: #fff; border-color: var(--line); color: var(--text);
+                     font-weight: 600; margin-bottom: -1px; }
+  .tabs2 .cnt { font-size: 10.5px; background: #eef2ff; color: #3730a3; border-radius: 8px;
+                padding: 0 5px; margin-left: 2px; }
+  .pane { padding: 16px 18px 24px; }
+  .pane-head { display: flex; align-items: center; justify-content: space-between;
+               gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .pane-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
+  .pane-sub { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .04em;
+              margin: 20px 0 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .pane-sub:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+  #e_url, #mjUrl { width: 100%; }
+  .page-title { font-size: 15px; font-weight: 600; margin-right: 4px; }
+  .col-list { min-height: 0; }
+  .mj-list, .rv-list { flex: 1; overflow: auto; padding: 10px; }
+  .col-list .mj-empty, .col-list .app-empty { padding: 8px 4px; }
+  .mjdist-bar { max-width: 340px; }
+
   .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
   .warn { color: #b45309; }
 
@@ -360,178 +401,211 @@
   </div>
 </div>
 
-  <section class="mj" id="viewMj">
-    <div>
-      <div class="panel">
-        <h2>按公司找面经 <em>跳到平台搜</em></h2>
-        <div class="row2">
-          <div><label>公司</label><input id="mjCo" placeholder="字节跳动"></div>
-          <div><label>岗位</label><input id="mjRole" placeholder="Java 后端"></div>
-        </div>
-        <div class="chips" id="mjPlatforms" style="margin-top:10px">
-          <button class="chip" data-p="nc">牛客</button>
-          <button class="chip" data-p="mm">脉脉</button>
-          <button class="chip" data-p="zh">知乎</button>
-          <button class="chip" data-p="csdn">CSDN</button>
-          <button class="chip" data-p="bing">必应</button>
-        </div>
-        <div class="hint" style="margin-top:8px">
-          平台都禁止跨域抓取，这里生成带关键词的搜索页；看到有用的内容把正文复制到下面。
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>导入面经 <em>链接 / 正文</em></h2>
-        <label>链接（可选）</label>
-        <input id="mjUrl" placeholder="https://www.nowcoder.com/discuss/...">
-        <label>面经正文</label>
-        <textarea id="mjRaw" rows="7" placeholder="把面经正文整段粘进来"></textarea>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="mini" id="mjExtract">从正文提题</button>
-          <button class="mini" id="mjAi">用 AI 提炼</button>
-          <button class="mini" id="mjFetch">试着读取链接</button>
-        </div>
-        <div class="hint" id="mjMsg"></div>
-      </div>
-
-      <div class="panel">
-        <h2>我的面经 <em id="mjCount">0 条</em></h2>
-        <input id="mjSearch" placeholder="搜公司、岗位或题目里的词" style="margin-top:2px">
-        <div class="chips" id="mjCompanyFilter" style="margin-top:8px"></div>
-        <div class="mj-list" id="mjList"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="mini" id="mjNew">新建一条</button>
-          <button class="mini" id="mjFromApp">从投递记录带入</button>
-          <button class="mini" id="mjExport">导出全部</button>
-        </div>
-      </div>
+  <section class="page" id="viewMj">
+    <div class="page-tool">
+      <b class="page-title">面经</b>
+      <input id="mjSearch" placeholder="搜公司 / 岗位 / 题目里的词" style="width:260px">
+      <div class="chips" id="mjCompanyFilter" style="margin:0"></div>
+      <span class="grow"></span>
+      <button class="mini" id="mjNew">＋ 新建面经</button>
+      <button class="mini" id="mjExport">导出全部</button>
     </div>
 
-    <div>
-      <div class="panel">
-        <h2>面经概览 <em id="mjTopNote"></em></h2>
-        <div class="mj-stats" id="mjStats"></div>
-        <div class="iv-sub" style="margin-top:12px">技术方向分布</div>
-        <div id="mjDist"></div>
-        <div class="iv-sub" style="margin-top:14px">高频考点</div>
-        <div class="top-q" id="mjTop"></div>
-        <div class="hint" id="mjTopHint"></div>
-      </div>
+    <div class="page-body">
+      <aside class="col-list">
+        <div class="list-head"><b>面经库</b><em id="mjCount">0 条</em></div>
+        <div class="mj-list" id="mjList"></div>
+      </aside>
 
-      <div class="panel">
-        <h2>面经详情 <em id="mjEditState">新建</em></h2>
-        <div class="mj-cols">
-          <div><label>公司</label><input id="e_co" placeholder="字节跳动"></div>
-          <div><label>岗位</label><input id="e_role" placeholder="Java 后端"></div>
-          <div><label>日期</label><input id="e_date" placeholder="2026/11/10"></div>
-          <div><label>轮次</label>
-            <select id="e_round"><option>一面</option><option>二面</option><option>三面</option>
-              <option>HR 面</option><option>综合</option></select>
-          </div>
-          <div><label>结果</label>
-            <select id="e_result"><option value="0">待定</option><option value="1">进下一轮</option>
-              <option value="2">挂了</option><option value="3">拿到 offer</option></select>
-          </div>
-          <div><label>来源</label>
-            <select id="e_source"><option>牛客</option><option>脉脉</option><option>知乎</option>
-              <option>CSDN</option><option>群聊/同学</option><option>自己记录</option></select>
-          </div>
+      <section class="col-main">
+        <div class="tabs2" id="mjTabs">
+          <button data-t="detail" class="on">面经详情</button>
+          <button data-t="import">导入 / 搜平台</button>
+          <button data-t="stats">概览</button>
         </div>
-        <label>来源链接</label>
-        <input id="e_url" placeholder="可留空">
-        <label>问题清单（一行一题）</label>
-        <textarea id="e_qs" rows="9" placeholder="讲讲 Redis 的持久化&#10;为什么用 MQ 削峰"></textarea>
-        <label>面试官在意什么 / 流程备注</label>
-        <textarea id="e_focus" rows="2" placeholder="重点问项目细节，简历上写了什么就追问什么"></textarea>
 
-        <label>总结 / 复盘</label>
-        <textarea id="e_note" rows="4" placeholder="哪块答得不好、下次怎么补"></textarea>
+        <div class="pane" id="mjPaneDetail">
+          <div class="pane-head">
+            <h3 id="mjEditState">新建面经</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="mini" id="mjFromApp">从投递记录带入</button>
+              <button class="primary" id="e_save">保存</button>
+              <button class="mini" id="e_del">删除</button>
+              <button class="mini" id="e_md">复制 Markdown</button>
+            </div>
+          </div>
+          <div class="hint" id="e_msg" style="margin:-4px 0 10px"></div>
 
-        <div class="iv-sub">这条面经里的题</div>
-        <div id="e_qpreview" class="hint"></div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
-          <button class="primary" id="e_save">保存</button>
-          <button class="mini" id="e_del">删除</button>
-          <button class="mini" id="e_md">复制为 Markdown</button>
-          <span class="hint" id="e_msg"></span>
+          <div class="mj-cols">
+            <div><label>公司</label><input id="e_co" placeholder="字节跳动"></div>
+            <div><label>岗位</label><input id="e_role" placeholder="Java 后端"></div>
+            <div><label>日期</label><input id="e_date" placeholder="2026/11/10"></div>
+            <div><label>轮次</label>
+              <select id="e_round"><option>一面</option><option>二面</option><option>三面</option>
+                <option>HR 面</option><option>综合</option></select>
+            </div>
+            <div><label>结果</label>
+              <select id="e_result"><option value="0">待定</option><option value="1">进下一轮</option>
+                <option value="2">挂了</option><option value="3">拿到 offer</option></select>
+            </div>
+            <div><label>来源</label>
+              <select id="e_source"><option>牛客</option><option>脉脉</option><option>知乎</option>
+                <option>CSDN</option><option>群聊/同学</option><option>自己记录</option></select>
+            </div>
+          </div>
+
+          <label>来源链接</label>
+          <input id="e_url" placeholder="可留空">
+
+          <label>问题清单（一行一题）</label>
+          <textarea id="e_qs" rows="6" placeholder="讲讲 Redis 的持久化机制&#10;为什么限流要用令牌桶"></textarea>
+
+          <label>面试官在意什么 / 流程备注</label>
+          <textarea id="e_focus" rows="2" placeholder="重点追问项目细节，简历上写了什么就追问什么"></textarea>
+
+          <label>总结 / 复盘</label>
+          <textarea id="e_note" rows="4" placeholder="哪块答得不好、下次怎么补"></textarea>
+
+          <div class="pane-sub">这条面经里的题</div>
+          <div id="e_qpreview" class="hint"></div>
         </div>
-      </div>
+
+        <div class="pane" id="mjPaneImport" hidden>
+          <div class="pane-head"><h3>按公司找面经</h3></div>
+          <div class="hint" style="margin-bottom:10px">
+            填好公司和岗位，点平台按钮会打开带关键词的搜索页。平台都禁止跨域抓取，
+            看到有用的内容把正文复制到下面。
+          </div>
+          <div class="mj-cols">
+            <div><label>公司</label><input id="mjCo" placeholder="字节跳动"></div>
+            <div><label>岗位</label><input id="mjRole" placeholder="Java 后端"></div>
+          </div>
+          <div class="chips" id="mjPlatforms" style="margin-top:10px">
+            <button class="chip" data-p="nc">牛客</button>
+            <button class="chip" data-p="mm">脉脉</button>
+            <button class="chip" data-p="zh">知乎</button>
+            <button class="chip" data-p="csdn">CSDN</button>
+            <button class="chip" data-p="bing">必应</button>
+          </div>
+
+          <div class="pane-sub">导入正文</div>
+          <label>链接（可选）</label>
+          <input id="mjUrl" placeholder="https://www.nowcoder.com/discuss/...">
+          <label>面经正文</label>
+          <textarea id="mjRaw" rows="8" placeholder="把面经正文整段粘进来"></textarea>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button class="mini" id="mjExtract">从正文提题</button>
+            <button class="mini" id="mjAi">用 AI 提炼</button>
+            <button class="mini" id="mjFetch">试着读取链接</button>
+          </div>
+          <div class="hint" id="mjMsg" style="margin-top:10px"></div>
+        </div>
+
+        <div class="pane" id="mjPaneStats" hidden>
+          <div class="pane-head"><h3>面经概览</h3><em class="hint" id="mjTopNote"></em></div>
+          <div class="mj-stats" id="mjStats"></div>
+          <div class="pane-sub">技术方向分布</div>
+          <div id="mjDist"></div>
+          <div class="pane-sub">高频考点</div>
+          <div class="top-q" id="mjTop"></div>
+          <div class="hint" id="mjTopHint" style="margin-top:8px"></div>
+        </div>
+      </section>
     </div>
   </section>
 
-  <section class="rv" id="viewRv">
-    <div>
-      <div class="panel">
-        <h2>模拟预演 <em id="drillState">未开始</em></h2>
-        <div class="hint">
-          从简历题库里随机抽 8 题，逐题自评。答不上的会进错题本，之后反复刷。
-        </div>
-        <div id="drillBox" style="margin-top:10px"></div>
-      </div>
-
-      <div class="panel">
-        <h2>错题本 <em id="wrongCount">0 题</em></h2>
-        <div class="hint">来自复盘的「答得不好」和预演里标了「不会」的题。勾掉表示已经掌握。</div>
-        <div class="wrong-list" id="wrongList"></div>
-      </div>
-
-      <div class="panel">
-        <h2>复盘记录 <em id="rvCount">0 条</em></h2>
-        <div class="rv-list" id="rvList"></div>
-        <button class="mini" id="rvNew" style="margin-top:10px">写一条新复盘</button>
-      </div>
+  <section class="page" id="viewRv">
+    <div class="page-tool">
+      <b class="page-title">复盘</b>
+      <span class="hint" style="margin:0">面试前预演、面试后复盘、错题反复刷</span>
+      <span class="grow"></span>
+      <button class="mini" id="rvNew">＋ 写新复盘</button>
+      <button class="mini" id="rvDrillTop">开始预演</button>
+      <button class="mini" id="bkExport">导出数据</button>
     </div>
 
-    <div>
-      <div class="panel">
-        <h2>面试复盘 <em id="rvState">新建</em></h2>
-        <div class="mj-cols">
-          <div><label>公司</label><input id="r_co" placeholder="字节跳动"></div>
-          <div><label>岗位</label><input id="r_role" placeholder="Java 后端"></div>
-          <div><label>日期</label><input id="r_date" placeholder="2026/11/10"></div>
-          <div><label>轮次</label>
-            <select id="r_round"><option>一面</option><option>二面</option><option>三面</option>
-              <option>HR 面</option><option>综合</option></select>
+    <div class="page-body">
+      <aside class="col-list">
+        <div class="list-head"><b>复盘记录</b><em id="rvCount">0 条</em></div>
+        <div class="rv-list" id="rvList"></div>
+      </aside>
+
+      <section class="col-main">
+        <div class="tabs2" id="rvTabs">
+          <button data-t="detail" class="on">复盘详情</button>
+          <button data-t="drill">模拟预演</button>
+          <button data-t="wrong">错题本 <span class="cnt" id="wrongBadge">0</span></button>
+          <button data-t="data">数据备份</button>
+        </div>
+
+        <div class="pane" id="rvPaneDetail">
+          <div class="pane-head">
+            <h3 id="rvState">新建复盘</h3>
+            <div style="display:flex;gap:8px">
+              <button class="primary" id="r_save">保存复盘</button>
+              <button class="mini" id="r_del">删除</button>
+            </div>
           </div>
-          <div><label>整体自评</label>
-            <select id="r_rate"><option value="5">5 很顺</option><option value="4">4 基本答上</option>
-              <option value="3" selected>3 一般</option><option value="2">2 卡了几处</option>
-              <option value="1">1 崩了</option></select>
+          <div class="hint" id="r_msg" style="margin:-4px 0 10px"></div>
+
+          <div class="mj-cols">
+            <div><label>公司</label><input id="r_co" placeholder="字节跳动"></div>
+            <div><label>岗位</label><input id="r_role" placeholder="Java 后端"></div>
+            <div><label>日期</label><input id="r_date" placeholder="2026/11/10"></div>
+            <div><label>轮次</label>
+              <select id="r_round"><option>一面</option><option>二面</option><option>三面</option>
+                <option>HR 面</option><option>综合</option></select>
+            </div>
+            <div><label>整体自评</label>
+              <select id="r_rate"><option value="5">5 很顺</option><option value="4">4 基本答上</option>
+                <option value="3" selected>3 一般</option><option value="2">2 卡了几处</option>
+                <option value="1">1 崩了</option></select>
+            </div>
+            <div><label>关联投递</label><select id="r_app"><option value="">不关联</option></select></div>
           </div>
-          <div><label>关联投递</label><select id="r_app"><option value="">不关联</option></select></div>
+
+          <label>被问到的题（一行一题）</label>
+          <textarea id="r_qs" rows="6" placeholder="项目里最难的点是什么&#10;Redis 持久化怎么选"></textarea>
+
+          <label>答得不好的题（一行一题，保存后进错题本）</label>
+          <textarea id="r_bad" rows="4" placeholder="MySQL 索引失效的场景我漏了两个"></textarea>
+
+          <label>复盘总结</label>
+          <textarea id="r_note" rows="4" placeholder="哪块准备不足、面试官在意什么"></textarea>
+
+          <label>下一步动作</label>
+          <textarea id="r_todo" rows="2" placeholder="这周补完 B+ 树与索引下推，写一篇笔记"></textarea>
         </div>
 
-        <label>被问到的题（一行一题）</label>
-        <textarea id="r_qs" rows="6" placeholder="项目里最难的点是什么&#10;Redis 持久化怎么选"></textarea>
-
-        <label>答得不好的题（一行一题，会进错题本）</label>
-        <textarea id="r_bad" rows="4" placeholder="MySQL 索引失效的场景我漏了两个"></textarea>
-
-        <label>复盘总结</label>
-        <textarea id="r_note" rows="4" placeholder="哪块准备不足、面试官在意什么"></textarea>
-
-        <label>下一步动作</label>
-        <textarea id="r_todo" rows="2" placeholder="这周补完 B+ 树与索引下推，写一篇笔记"></textarea>
-
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
-          <button class="primary" id="r_save">保存复盘</button>
-          <button class="mini" id="r_del">删除</button>
-          <span class="hint" id="r_msg"></span>
+        <div class="pane" id="rvPaneDrill" hidden>
+          <div class="pane-head"><h3>模拟预演</h3><em class="hint" id="drillState">未开始</em></div>
+          <div class="hint" style="margin-bottom:12px">
+            从简历题库随机抽 8 题，逐题自评。标「答不上」的会进错题本，之后在错题本里反复刷。
+          </div>
+          <div id="drillBox"></div>
         </div>
-      </div>
 
-      <div class="panel">
-        <h2>数据备份 <em>本地存储不保险</em></h2>
-        <div class="hint">
-          简历、面经、复盘、投递记录全在这台浏览器里。清缓存或换电脑就没了，建议每周导出一次。
+        <div class="pane" id="rvPaneWrong" hidden>
+          <div class="pane-head"><h3>错题本</h3><em class="hint" id="wrongCount">0 题</em></div>
+          <div class="chips" id="wrongFilter" style="margin:0 0 12px"></div>
+          <div class="wrong-list" id="wrongList"></div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="mini" id="bkExport">导出全部数据</button>
-          <button class="mini" id="bkImport">导入备份</button>
-          <input type="file" id="bkFile" accept="application/json" style="display:none">
-          <span class="hint" id="bkMsg"></span>
+
+        <div class="pane" id="rvPaneData" hidden>
+          <div class="pane-head"><h3>数据备份</h3><em class="hint" id="bkLast"></em></div>
+          <div class="hint" style="margin-bottom:12px">
+            简历、面经、复盘、投递记录、AI 配置全在这台浏览器里。清缓存或换电脑就没了，建议每周导出一次放网盘。
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="mini" id="bkExport2">导出全部数据</button>
+            <button class="mini" id="bkImport">导入备份</button>
+            <input type="file" id="bkFile" accept="application/json" style="display:none">
+            <span class="hint" id="bkMsg"></span>
+          </div>
+          <div class="pane-sub">本地数据占用</div>
+          <div id="bkStat" class="hint"></div>
         </div>
-      </div>
+      </section>
     </div>
   </section>
 
@@ -2664,8 +2738,19 @@ const MJ = {
   editing: null,
   q: "",
   company: "all",
+  tab: "detail",
   msg: ""
 };
+
+function setMjTab(t) {
+  MJ.tab = t;
+  document.querySelectorAll("#mjTabs button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  const map = { detail: "mjPaneDetail", import: "mjPaneImport", stats: "mjPaneStats" };
+  Object.entries(map).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = k !== t;
+  });
+}
 
 const MJ_RESULT = ["待定", "进下一轮", "挂了", "拿到 offer"];
 
@@ -2820,7 +2905,11 @@ function renderMj() {
   set("e_focus", cur ? (cur.focus || "") : "");
   set("e_note", cur ? cur.note : "");
   document.getElementById("e_msg").textContent = MJ.msg;
+  document.getElementById("mjEditState").textContent = cur
+    ? `编辑：${cur.co || "未填公司"} · ${cur.role || ""}`
+    : "新建面经";
   renderQPreview();
+  setMjTab(MJ.tab);
 }
 
 /* 右侧表单里的题清单：显示标签，点标签去题库看对应技术点 */
@@ -2835,7 +2924,8 @@ function renderQPreview() {
   box.innerHTML = qs.map((q, i) => {
     const tags = mjTags(q);
     return `<div class="e-q"><span>${i + 1}.</span><span style="flex:1">${edEsc(q)}</span>
-      ${tags.slice(0, 2).map(t => `<span class="tagm" data-ivtag="${edEsc(t)}">${edEsc(t)}</span>`).join("")}</div>`;
+      ${tags.slice(0, 2).map(t => `<span class="tagm" data-ivtag="${edEsc(t)}">${edEsc(t)}</span>`).join("")}
+      <a href="#" class="eq-del" data-qdel="${i}" title="删掉这题">✕</a></div>`;
   }).join("") + `<div class="hint" style="margin-top:6px">共 ${qs.length} 题；点标签可跳到评估面板看该技术的参考答案。</div>`;
 }
 
@@ -2906,7 +2996,10 @@ document.getElementById("mjExtract").onclick = () => {
   MJ.msg = "";
   renderMj();
   document.getElementById("e_qs").value = qs.join("\n");
-  document.getElementById("mjMsg").textContent = `拆出 ${qs.length} 道题，已填到右侧「问题清单」，点保存入库。`;
+  document.getElementById("mjMsg").textContent = `拆出 ${qs.length} 道题，已填到「面经详情」，补上公司岗位点保存。`;
+  setMjTab("detail");
+  const co = document.getElementById("e_co");
+  if (co) co.focus();
 };
 
 /* 试着直接读链接（多数站点会跨域拦截，失败就让用户粘正文） */
@@ -2926,6 +3019,7 @@ document.getElementById("mjFetch").onclick = async () => {
       .split(/\n+/).map(s => s.trim()).filter(Boolean).join("\n");
     document.getElementById("mjRaw").value = plain.slice(0, 20000);
     const qs = mjExtract(plain);
+    document.getElementById("e_url").value = url;
     msg.textContent = qs.length
       ? `读到了 ${plain.length} 字，拆出 ${qs.length} 道题，点「从正文提题」写入清单。`
       : `读到了 ${plain.length} 字，但没拆出问题，可以手动挑。`;
@@ -2964,7 +3058,8 @@ document.getElementById("mjAi").onclick = async () => {
   if (!r.ok) { msg.textContent = "提炼失败：" + r.err; return; }
   document.getElementById("e_qs").value = r.map.join("\n");
   document.getElementById("e_url").value = document.getElementById("mjUrl").value || "";
-  msg.textContent = `AI 提炼出 ${r.map.length} 道题，已填入问题清单。`;
+  msg.textContent = `AI 提炼出 ${r.map.length} 道题，已填入「面经详情」的问题清单。`;
+  setMjTab("detail");
 };
 
 /* 列表点选 / 新建 / 保存 / 删除 / 复制 */
@@ -2975,7 +3070,24 @@ document.getElementById("mjList").addEventListener("click", (e) => {
   MJ.msg = "";
   renderMj();
 });
-document.getElementById("mjNew").onclick = () => { MJ.editing = null; MJ.msg = ""; renderMj(); };
+document.getElementById("mjTabs").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-t]");
+  if (b) { setMjTab(b.dataset.t); if (b.dataset.t === "stats") renderMj(); }
+});
+document.getElementById("rvTabs").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-t]");
+  if (b) setRvTab(b.dataset.t);
+});
+document.getElementById("rvDrillTop").onclick = () => {
+  setRvTab("drill");
+  if (!DR.running) drStart();
+};
+
+document.getElementById("mjNew").onclick = () => {
+  MJ.editing = null; MJ.msg = "";
+  setMjTab("detail");
+  renderMj();
+};
 
 document.getElementById("mjSearch").addEventListener("input", (e) => {
   MJ.q = e.target.value || "";
@@ -3030,6 +3142,16 @@ document.getElementById("e_qs").addEventListener("input", () => {
   MJ._t = setTimeout(renderQPreview, 300);
 });
 document.getElementById("e_qpreview").addEventListener("click", (e) => {
+  const del = e.target.closest("[data-qdel]");
+  if (del) {
+    e.preventDefault();
+    const lines = (document.getElementById("e_qs").value || "")
+      .split(/\n+/).map(x => x.trim()).filter(Boolean);
+    lines.splice(Number(del.dataset.qdel), 1);
+    document.getElementById("e_qs").value = lines.join("\n");
+    renderQPreview();
+    return;
+  }
   const t = e.target.closest("[data-ivtag]");
   if (!t) return;
   openInterviewTag(t.dataset.ivtag);
@@ -3246,8 +3368,23 @@ const RV = {
   list: LS.get("resume.reviews", []),
   wrong: LS.get("resume.wrong", []),
   editing: null,
+  tab: "detail",
+  wrongFilter: "all",
   msg: ""
 };
+
+function setRvTab(t) {
+  RV.tab = t;
+  document.querySelectorAll("#rvTabs button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  const map = { detail: "rvPaneDetail", drill: "rvPaneDrill", wrong: "rvPaneWrong", data: "rvPaneData" };
+  Object.entries(map).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = k !== t;
+  });
+  if (t === "wrong") renderWrong();
+  if (t === "drill") renderDrill();
+  if (t === "data") renderBkStat();
+}
 
 const DR = { items: [], i: 0, known: 0, unknown: 0, revealed: false, running: false };
 
@@ -3340,14 +3477,30 @@ function addWrong(q, from) {
 function renderWrong() {
   const box = document.getElementById("wrongList");
   const left = RV.wrong.filter(w => !w.done);
-  document.getElementById("wrongCount").textContent =
-    left.length ? `${left.length} 题待补` : "0 题";
+  document.getElementById("wrongCount").textContent = left.length ? `${left.length} 题待补` : "已清空";
+  const badge = document.getElementById("wrongBadge");
+  if (badge) badge.textContent = left.length;
+
+  const f = document.getElementById("wrongFilter");
+  if (f) {
+    const srcs = ["all", "预演", "复盘"];
+    f.innerHTML = srcs.map(k => {
+      const n = k === "all" ? RV.wrong.length : RV.wrong.filter(w => (w.from || "").indexOf(k) >= 0).length;
+      return `<button class="chip${RV.wrongFilter === k ? " hit" : ""}" data-wf="${k}">${k === "all" ? "全部" : k} ${n}</button>`;
+    }).join("")
+      + (RV.wrong.some(w => w.done) ? `<button class="chip" data-wclear="1">清理已掌握</button>` : "");
+  }
 
   if (!RV.wrong.length) {
     box.innerHTML = `<div class="app-empty">还没有错题。预演标「答不上」或复盘里写「答得不好」都会自动进来。</div>`;
     return;
   }
-  box.innerHTML = RV.wrong.map(w => `
+  const rows = RV.wrong.filter(w => RV.wrongFilter === "all" || (w.from || "").indexOf(RV.wrongFilter) >= 0);
+  if (!rows.length) {
+    box.innerHTML = `<div class="app-empty">这个来源下没有错题。</div>`;
+    return;
+  }
+  box.innerHTML = rows.map(w => `
     <div class="wrong-item${w.done ? " done" : ""}">
       <label class="wrong-q">
         <input type="checkbox" data-wdone="${w.id}"${w.done ? " checked" : ""}>
@@ -3394,6 +3547,10 @@ function renderRv() {
     `<option value="${a.id}">${edEsc(a.co || "未填公司")} · ${edEsc(a.role || "")} · ${edEsc(a.date)}</option>`).join("");
   appSel.value = cur && cur.appId ? cur.appId : "";
   document.getElementById("r_msg").textContent = RV.msg;
+  document.getElementById("rvState").textContent = cur
+    ? `编辑：${cur.co || "未填公司"} · ${cur.round || ""}`
+    : "新建复盘";
+  setRvTab(RV.tab);
 }
 
 function saveRv() {
@@ -3446,6 +3603,17 @@ document.getElementById("r_del").onclick = () => {
   renderRv();
 };
 
+document.getElementById("wrongFilter").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-wf]");
+  if (b) { RV.wrongFilter = b.dataset.wf; renderWrong(); return; }
+  const c = e.target.closest("[data-wclear]");
+  if (c) {
+    RV.wrong = RV.wrong.filter(w => !w.done);
+    LS.set("resume.wrong", RV.wrong);
+    renderWrong();
+  }
+});
+
 document.getElementById("wrongList").addEventListener("click", (e) => {
   const chk = e.target.closest("[data-wdone]");
   if (chk) {
@@ -3463,7 +3631,29 @@ document.getElementById("wrongList").addEventListener("click", (e) => {
 });
 
 /* ---------- 备份 ---------- */
-document.getElementById("bkExport").onclick = () => {
+function renderBkStat() {
+  let total = 0;
+  const rows = [];
+  Object.keys(localStorage).forEach(k => {
+    if (k.indexOf("resume.") !== 0) return;
+    const size = (localStorage.getItem(k) || "").length;
+    total += size;
+    rows.push([k.replace("resume.", ""), size]);
+  });
+  rows.sort((a, b) => b[1] - a[1]);
+  const el = document.getElementById("bkStat");
+  if (el) {
+    el.innerHTML = `共 ${(total / 1024).toFixed(1)} KB，占用最多的：`
+      + rows.slice(0, 6).map(([k, v]) => `${k} ${(v / 1024).toFixed(1)}KB`).join("　");
+  }
+  const last = document.getElementById("bkLast");
+  if (last) {
+    const t = LS.get("resume.backupAt", "");
+    last.textContent = t ? "上次导出 " + t : "还没导出过";
+  }
+}
+
+function doBackup() {
   const data = {};
   Object.keys(localStorage).forEach(k => {
     if (k.indexOf("resume.") === 0) {
@@ -3478,9 +3668,14 @@ document.getElementById("bkExport").onclick = () => {
   a.download = `求职工作台备份-${appDate().replace(/\//g, "")}.json`;
   document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-  document.getElementById("bkMsg").textContent = "已导出，建议放进网盘或发自己邮箱";
-};
+  LS.set("resume.backupAt", appDate());
+  renderBkStat();
+  const m = document.getElementById("bkMsg");
+  if (m) m.textContent = "已导出，建议放进网盘或发自己邮箱";
+}
 
+document.getElementById("bkExport").onclick = doBackup;
+document.getElementById("bkExport2").onclick = doBackup;
 document.getElementById("bkImport").onclick = () => document.getElementById("bkFile").click();
 document.getElementById("bkFile").addEventListener("change", (e) => {
   const f = e.target.files && e.target.files[0];
@@ -3528,6 +3723,7 @@ renderApps();
 renderRv();
 renderWrong();
 renderDrill();
+renderBkStat();
 renderJdChips();
 renderProjects();
 renderPaper();
