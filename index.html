@@ -67,10 +67,14 @@
   .proj-ai { font-size: 11px; color: #1d4ed8; margin-top: 4px; line-height: 1.6; }
 
   .preview-wrap { position: sticky; top: 78px; }
-  .paper { width: 794px; min-height: 1123px; margin: 0 auto; background: #fff;
-           padding: 34px 44px; box-shadow: 0 4px 18px rgba(0,0,0,.08);
+  /* 屏幕上也用 210mm、和打印一致的内边距：只要宽一点点不同，某些长句就会多折一行，
+     预览看着一页、导出的 PDF 却变两页 */
+  .paper { width: 210mm; min-height: 297mm; margin: 0 auto; background: #fff;
+           padding: 12mm 15mm; box-shadow: 0 4px 18px rgba(0,0,0,.08);
            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-           color: #1a1a1a; font-size: 10.5pt; line-height: 1.55; }
+           color: #1a1a1a; line-height: 1.55;
+           --fs: 14px; --fill: 1; --lh: 1.45;
+           font-size: var(--fs); }
 
   .head { overflow: hidden; }
   .head-photo { float: right; width: 84px; height: 108px; margin-left: 14px;
@@ -83,23 +87,30 @@
                padding: 0; font-size: 12px; line-height: 14px; border-radius: 3px;
                border: none; background: rgba(0,0,0,.45); color: #fff; cursor: pointer; }
 
-  .paper h1 { font-size: 22pt; margin: 0 0 2px; letter-spacing: 2px; }
-  .contact { font-size: 9pt; color: #444; }
-  .contact span { margin-right: 12px; }
-  .intent { font-size: 10pt; margin-top: 6px; }
-  .sec { margin-top: 10px; }
-  .sec-title { font-size: 11.5pt; font-weight: 700; letter-spacing: 1px;
-               border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 6px; }
+  /* 字号全部用 em，跟着 --fs 一起缩放，这样“铺满页面”时是整体放大而不是只拉间距 */
+  /* 抬头区固定字号：名字和联系方式不跟着正文一起放大，否则联系方式会被挤到第二行 */
+  .paper h1 { font-size: 29.33px; margin: 0 0 calc(2px * var(--fill)); letter-spacing: 2px; }
+  .contact { font-size: 12px; color: #444; }
+  .contact span { margin-right: 10px; }
+  .intent { font-size: 13.33px; margin-top: calc(6px * var(--fill)); }
+  .sec { margin-top: calc(10px * var(--fill)); }
+  .sec-title { font-size: 1.095em; font-weight: 700; letter-spacing: 1px;
+               border-bottom: 1px solid #333; padding-bottom: calc(2px * var(--fill));
+               margin-bottom: calc(6px * var(--fill)); }
   .edu-line, .proj-title { overflow: hidden; }
-  .edu-line .date, .proj-title .date { float: right; font-weight: 400; font-size: 10pt; color: #333; }
+  .edu-line .date, .proj-title .date { float: right; font-weight: 400; font-size: .952em; color: #333; }
   .muted { color: #444; }
-  .proj-item { margin-bottom: 6px; }
-  .proj-title { font-weight: 700; font-size: 10.5pt; margin-top: 2px; }
-  .proj-title .role { font-weight: 400; color: #555; font-size: 10pt; }
-  .proj-desc { font-size: 9.5pt; color: #333; margin: 1px 0 2px; }
-  .proj-url { font-size: 9pt; color: #555; }
-  ul { margin: 3px 0 0; padding-left: 16px; }
-  li { font-size: 9.8pt; margin-bottom: 1.5px; line-height: 1.45; }
+  .sec .muted { line-height: var(--lh); }
+  .proj-item { margin-bottom: calc(6px * var(--fill)); }
+  .proj-title { font-weight: 700; font-size: 1em; margin-top: calc(2px * var(--fill)); }
+  .proj-title .role { font-weight: 400; color: #555; font-size: .952em; }
+  .proj-desc { font-size: .905em; color: #333; line-height: var(--lh);
+               margin: calc(1px * var(--fill)) 0 calc(2px * var(--fill)); }
+  .proj-url { font-size: .857em; color: #555; }
+  .proj-stack { font-size: .857em; color: #555; margin-top: calc(1px * var(--fill)); }
+  .proj-stack b { font-weight: 600; color: #333; }
+  ul { margin: calc(3px * var(--fill)) 0 0; padding-left: 16px; }
+  li { font-size: .933em; margin-bottom: calc(1.5px * var(--fill)); line-height: var(--lh); }
   li b { font-weight: 600; }
 
   [contenteditable="true"] { outline: none; border-radius: 3px; }
@@ -155,7 +166,7 @@
       <h2>项目推荐 <em id="pickCount">已选 0 个</em></h2>
       <div id="projList"></div>
       <div class="hint" style="margin-top:10px">
-        点选项目加入简历，点击顺序即简历中的顺序。建议只放 2–3 个。
+        点选项目加入简历，点击顺序即简历中的顺序。默认放 2 个，版面会自动铺满；最多 3 个。
       </div>
     </div>
 
@@ -388,22 +399,22 @@ const PROJECTS = [
 ------------------------------------------------------------------ */
 const ROLE_PRESETS = [
   { id: "java-backend", label: "Java 后端", intent: "Java 后端开发工程师",
-    projects: ["code-review-agent", "serverops", "smart-site"],
+    projects: ["serverops", "code-review-agent"],
     order: ["语言", "框架", "存储", "系统", "AI", "工程"] },
   { id: "ai-agent", label: "AI Agent", intent: "AI Agent 应用开发工程师",
-    projects: ["code-review-agent", "serverops", "cpp-code-insight"],
+    projects: ["code-review-agent", "cpp-code-insight"],
     order: ["语言", "AI", "框架", "存储", "工程", "系统"] },
   { id: "cpp-systems", label: "C++ 工程师", intent: "C++ 后端 / 系统开发工程师",
-    projects: ["cpp-code-insight", "code-review-agent", "go-gateway"],
+    projects: ["cpp-code-insight", "code-review-agent"],
     order: ["语言", "系统", "性能", "工程", "存储", "框架"] },
   { id: "server-ops", label: "服务器工程师", intent: "服务器开发 / 运维开发工程师",
-    projects: ["serverops", "go-gateway", "cpp-code-insight"],
+    projects: ["serverops", "go-gateway"],
     order: ["语言", "服务治理", "可观测", "存储", "系统", "工程"] },
   { id: "test-dev", label: "测试开发", intent: "测试开发工程师",
-    projects: ["api-testkit", "code-review-agent", "serverops"],
+    projects: ["api-testkit", "code-review-agent"],
     order: ["语言", "测试", "工程", "框架", "存储"] },
   { id: "go-cloud", label: "Go 云原生", intent: "Go 服务端开发工程师",
-    projects: ["go-gateway", "gesture-music", "cpp-code-insight"],
+    projects: ["go-gateway", "gesture-music"],
     order: ["语言", "服务治理", "可观测", "系统", "存储", "工程"] }
 ];
 
@@ -528,9 +539,10 @@ function composeSkills(projectIds, order) {
       return hitA - hitB;
     });
     let joined = arr.map(it => it.detail.length ? `${it.name}（${it.detail.join("、")}）` : it.name).join("、");
-    if (joined.length > 88) joined = joined.slice(0, 86) + "…";
+    // 宁可换行也不要截断成省略号，简历上“…”很像是内容没写完
+    if (joined.length > 120) joined = joined.slice(0, 120).replace(/、[^、]*$/, "");
     lines.push(`<b>${SKILL_LABEL[cat] || cat}</b>：${joined}`);
-    if (lines.length >= 4) break;
+    if (lines.length >= 5) break;
   }
   return lines;
 }
@@ -638,6 +650,49 @@ function ce(k, value) {
   return `<span contenteditable="true" data-k="${k}">${value || ""}</span>`;
 }
 
+/* ------------------------------------------------------------------
+   版面自适应：项目少的时候整体放大字号并适当拉开行距，把页面铺满；
+   内容多了再反过来收紧。单一参数 t 同时驱动字号、行距、段间距，
+   避免出现“字很小但间距巨大”的怪样子。
+------------------------------------------------------------------ */
+const PAPER_TARGET = 1046;   // 正文底部落到纸张的这个位置：整页 1122.5，下方留约 2cm 白
+                             // 屏幕与打印的内边距已统一为 12mm，两者版面完全一致
+
+function contentBottom() {
+  const paper = document.getElementById("paper");
+  const secs = paper.querySelectorAll(".sec");
+  const last = secs[secs.length - 1];
+  if (!last) return 0;
+  return last.getBoundingClientRect().bottom - paper.getBoundingClientRect().top;
+}
+
+/* t=0 时 10.5pt / 行距 1.45 / 基准间距；t=1 时约 11.7pt / 行距 1.68 / 间距放大一倍 */
+function applyFill(t) {
+  const paper = document.getElementById("paper");
+  const fs = 14 + t * 1.6;                                   // 14px = 10.5pt
+  const fill = Math.max(0.72, 1 + t * 1.0);                  // 间距不压得太死
+  const lh = Math.max(1.34, Math.min(1.78, 1.45 + t * 0.23));
+  paper.style.setProperty("--fs", fs.toFixed(2) + "px");
+  paper.style.setProperty("--fill", fill.toFixed(3));
+  paper.style.setProperty("--lh", lh.toFixed(3));
+}
+
+function fitPaper() {
+  let lo = -0.6, hi = 1.35, best = 0;   // 上限约 12pt，再大就不像简历了
+
+  applyFill(0);
+  const over = () => contentBottom() > PAPER_TARGET;
+
+  for (let k = 0; k < 14; k++) {
+    const mid = (lo + hi) / 2;
+    applyFill(mid);
+    if (over()) hi = mid;        // 还放不下，往回收
+    else { best = mid; lo = mid; }  // 放得下，试着再放大
+  }
+  applyFill(best);
+  return best;
+}
+
 function renderPaper() {
   const paper = document.getElementById("paper");
   const picked = state.selected.length
@@ -660,6 +715,7 @@ function renderPaper() {
         </div>
         <div class="proj-desc" contenteditable="true" data-pid="${p.id}" data-i="desc">${desc}</div>
         <div class="proj-url">项目地址：<a href="${p.url}" target="_blank">${p.url.replace("https://", "")}</a></div>
+        <div class="proj-stack"><b>技术栈</b>：${p.stack}</div>
         <ul>${items}</ul>
       </div>`;
   }).join("");
@@ -701,11 +757,21 @@ function renderPaper() {
       <ul>${(state.skills || []).map(x => `<li>${x}</li>`).join("")}</ul>
     </div>
   `;
+
+  fitPaper();
 }
 
 /* ------------------------------------------------------------------
    就地编辑：写回状态并落盘
 ------------------------------------------------------------------ */
+/* 就地编辑改了文字后，内容高度会变，重新算一次铺满比例 */
+let refitTimer = null;
+document.addEventListener("input", (e) => {
+  if (!e.target.closest("[contenteditable]")) return;
+  clearTimeout(refitTimer);
+  refitTimer = setTimeout(() => { if (document.getElementById("paper")) fitPaper(); }, 350);
+});
+
 document.addEventListener("input", (e) => {
   const el = e.target.closest("[contenteditable]");
   if (!el) return;
@@ -988,31 +1054,42 @@ function exportWord() {
     body = body.replace(/<div class="head-photo"[^>]*>[\s\S]*?<\/div>/, "");
   }
 
+  // Word 里没有 --fill/--fs 这些变量，把当前自适应算出来的字号与段间距折算成 pt 写死进去，
+  // 否则预览是铺满的、导出的 Word 却是偏空的两种样子。
+  const paper = document.getElementById("paper");
+  const k = (parseFloat(getComputedStyle(paper).fontSize) || 14) / 14;
+  const fill = parseFloat(paper.style.getPropertyValue("--fill")) || 1;
+  const lh = parseFloat(paper.style.getPropertyValue("--lh")) || 1.45;
+  const fs = v => (v * k).toFixed(2) + "pt";              // 以 10.5pt 为基准等比放大
+  const gap = px => (px * fill * 0.75).toFixed(1) + "pt";  // px→pt，同时跟随段间距倍率
+
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
       xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
   <head><meta charset="utf-8">
   <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
   <style>
     @page { size: A4; margin: 1.4cm 1.6cm; }
-    body { font-family: "Microsoft YaHei"; font-size: 10.5pt; line-height: 1.5; color: #1a1a1a; }
-    h1 { font-size: 22pt; margin: 0 0 4pt; letter-spacing: 2pt; }
-    .contact { font-size: 9pt; color: #444; }
+    body { font-family: "Microsoft YaHei"; font-size: ${fs(10.5)}; line-height: 1.5; color: #1a1a1a; }
+    h1 { font-size: ${fs(22)}; margin: 0 0 ${gap(2)}; letter-spacing: 2pt; }
+    .contact { font-size: ${fs(9)}; color: #444; }
     .contact span { margin-right: 12pt; }
-    .intent { font-size: 10pt; margin-top: 4pt; }
-    .sec { margin-top: 10pt; }
-    .sec-title { font-size: 11.5pt; font-weight: bold; border-bottom: 1px solid #333;
-                 padding-bottom: 2pt; margin-bottom: 4pt; }
+    .intent { font-size: ${fs(10)}; margin-top: ${gap(6)}; }
+    .sec { margin-top: ${gap(10)}; }
+    .sec-title { font-size: ${fs(11.5)}; font-weight: bold; border-bottom: 1px solid #333;
+                 padding-bottom: ${gap(2)}; margin-bottom: ${gap(6)}; }
     .edu-line, .proj-title { overflow: hidden; }
-    .edu-line .date, .proj-title .date { float: right; font-weight: normal; font-size: 10pt; color: #333; }
-    .proj-title { font-weight: bold; margin-top: 5pt; }
-    .proj-title .role { font-weight: normal; color: #555; font-size: 10pt; }
-    .proj-item { margin-bottom: 6pt; }
-    .proj-desc { font-size: 9.5pt; color: #333; }
-    .proj-url { font-size: 9pt; color: #555; }
+    .edu-line .date, .proj-title .date { float: right; font-weight: normal; font-size: ${fs(10)}; color: #333; }
+    .proj-title { font-weight: bold; margin-top: ${gap(2)}; }
+    .proj-title .role { font-weight: normal; color: #555; font-size: ${fs(10)}; }
+    .proj-item { margin-bottom: ${gap(6)}; }
+    .proj-desc { font-size: ${fs(9.5)}; color: #333; line-height: ${lh.toFixed(2)}; }
+    .proj-url { font-size: ${fs(9)}; color: #555; }
+    .proj-stack { font-size: ${fs(9)}; color: #555; margin-top: ${gap(1)}; }
+    .proj-stack b { font-weight: bold; color: #333; }
     a { color: #1a4fb4; text-decoration: none; }
-    ul { margin: 2pt 0 0 0; padding-left: 14pt; }
-    li { font-size: 9.8pt; margin-bottom: 1.5pt; }
-    .muted { color: #444; }
+    ul { margin: ${gap(3)} 0 0 0; padding-left: 14pt; }
+    li { font-size: ${fs(9.8)}; margin-bottom: ${gap(1.5)}; line-height: ${lh.toFixed(2)}; }
+    .muted { color: #444; line-height: ${lh.toFixed(2)}; }
   </style></head><body>${body}</body></html>`;
 
   download(new Blob(["\ufeff", html], { type: "application/msword" }),
@@ -1041,7 +1118,7 @@ jdEl.addEventListener("input", () => {
     state.aiScores = null;
     renderJdChips();
 
-    if (!state.touched) autoPick(3);
+    if (!state.touched) autoPick(2);
     state.skills = composeSkills(state.selected, currentOrder());
     renderProjects();
 
@@ -1056,7 +1133,6 @@ function autoPick(n) {
     .sort((a, b) => b.score - a.score).slice(0, n || 2).map(x => x.p.id);
   state.selected = ranked;
 }
-
 function renderJdChips() {
   const box = document.getElementById("jdChips");
   box.innerHTML = "";
