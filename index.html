@@ -191,6 +191,27 @@
   .top-q .chip { cursor: default; }
   .mj-empty { font-size: 12.5px; color: var(--muted); padding: 14px 0; }
   @media print { .mj { display: none !important; } .viewnav { display: none !important; } }
+
+  /* 投递记录 */
+  .app-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px;
+              max-height: 340px; overflow: auto; }
+  .app-item { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; background: #fff; }
+  .app-item:hover { border-color: #c9cdd4; }
+  .app-top { display: flex; align-items: baseline; gap: 6px; }
+  .app-co { font-size: 13px; font-weight: 600; }
+  .app-role { font-size: 11.5px; color: var(--muted); }
+  .app-score { font-size: 12px; font-weight: 600; color: var(--accent); margin-left: auto;
+               font-variant-numeric: tabular-nums; }
+  .app-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .app-status { font-size: 10.5px; padding: 1px 7px; border-radius: 9px; background: #eef2ff;
+                color: #3730a3; }
+  .app-status.s1 { background: #fef3c7; color: #92400e; }
+  .app-status.s2 { background: #fee2e2; color: #991b1b; }
+  .app-status.s3 { background: #dcfce7; color: #166534; }
+  .app-tools { display: flex; gap: 10px; margin-top: 6px; font-size: 11.5px; }
+  .app-tools a { color: var(--muted); }
+  .app-tools a:hover { color: var(--accent); }
+  .app-empty { font-size: 12px; color: var(--muted); padding: 10px 0; }
   .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
   .warn { color: #b45309; }
 
@@ -411,7 +432,11 @@
       <div class="hint">
         一整段粘进来，求职意向、项目组合、技能顺序都会按它重算。没有 JD 也可以手动挑项目。
       </div>
-      <textarea id="jd" rows="9" placeholder="把招聘要求整段粘进来"></textarea>
+      <div class="row2">
+        <div><label>公司</label><input id="jdCo" placeholder="字节跳动"></div>
+        <div><label>岗位</label><input id="jdRole" placeholder="Java 后端开发"></div>
+      </div>
+      <textarea id="jd" rows="8" placeholder="把招聘要求整段粘进来" style="margin-top:10px"></textarea>
       <div class="chips" id="jdChips"></div>
     </div>
 
@@ -421,6 +446,19 @@
       <div class="hint" style="margin-top:10px">
         点选项目加入简历，点击顺序即简历中的顺序。默认放 2 个，版面会自动铺满；最多 3 个。
       </div>
+    </div>
+
+    <div class="panel">
+      <h2>投递记录 <em id="appCount">0 条</em></h2>
+      <div class="hint">
+        记录会把当时的 JD、项目组合、技能和分数一起存下来。之后点「恢复」就能回到那一版，
+        知道哪个公司哪个岗位投的是哪份简历。
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="mini" id="appAdd">记录当前这一版</button>
+      </div>
+      <div class="chips" id="appStatusFilter" style="margin-top:10px"></div>
+      <div class="app-list" id="appList"></div>
     </div>
 
     <div class="panel">
@@ -1964,7 +2002,14 @@ function evalDims() {
   const intentTerms = String(PROFILE.intent || "").toLowerCase()
     .split(/[\s\/、·]+/).filter(t => t.length >= 2 && !/工程师$|开发$/.test(t));
   const intentHit = jd && intentTerms.some(t => kwHit(jd, t)) ? 1 : 0;
-  const d1 = Math.round(Math.min(1, dirSum / 8) * 40 + tagRate * 40 + intentHit * 20);
+
+  // 用「JD 提到的技术点被所选项目覆盖了多少」当主指标：只按项目标签总数算的话，
+  // 短 JD 会被几十个无关标签稀释，明明对口也只有三四十分
+  const jdTechInJd = TECH_VOCAB.filter(t => jd && kwHit(jd, t.toLowerCase()));
+  const projText = picked.map(p => (p.stack + " " + p.tags.join(" ")).toLowerCase()).join(" ");
+  const projCovered = jdTechInJd.filter(t => kwHit(projText, t.toLowerCase()));
+  const techCov = jdTechInJd.length ? projCovered.length / jdTechInJd.length : 0.6;
+  const d1 = Math.round(techCov * 50 + Math.min(1, dirSum / 6) * 30 + intentHit * 20);
 
   // 2 项目相关度
   const scores = picked.map(p => scoreProject(p, state.analysis).score);
@@ -2007,7 +2052,9 @@ function evalDims() {
   if (quantRate > 0.2) d6 += 20;
 
   return [
-    { key: "match", name: "岗位匹配度", w: 30, score: clamp(d1), note: tagHit ? `所选项目命中 JD 关键词 ${tagHit}/${tagTotal} 个，方向信号 ${dirSum} 分` : "JD 与项目几乎没有交集" },
+    { key: "match", name: "岗位匹配度", w: 30, score: clamp(d1), note: jdTechInJd.length
+        ? `JD 技术点覆盖 ${projCovered.length}/${jdTechInJd.length}，方向信号 ${dirSum} 分`
+        : "JD 里没识别到具体技术词" },
     { key: "project", name: "项目相关度", w: 20, score: clamp(d2), note: picked.length ? `所选项目与 JD 的平均相关分 ${Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)}` : "还没有选项目" },
     { key: "skill", name: "技能覆盖", w: 15, score: clamp(d3), note: jdTech.length ? `JD 提到 ${jdTech.length} 个技术词，简历覆盖 ${covered.length} 个` : "JD 里没识别到具体技术词" },
     { key: "quant", name: "成果量化", w: 15, score: clamp(d4), note: `${bullets.length} 条要点里 ${quant} 条带具体指标` },
@@ -2598,6 +2645,188 @@ document.getElementById("e_md").onclick = async () => {
   }
 };
 
+/* ------------------------------------------------------------------
+   投递记录：哪个公司、哪个岗位、投的是哪一版简历
+------------------------------------------------------------------ */
+const APP_STATUS = ["已投递", "面试中", "已结束", "Offer"];
+
+state.apps = LS.get("resume.apps", []);
+state.appFilter = "all";
+state.jdCo = LS.get("resume.jdCo", "");
+state.jdRole = LS.get("resume.jdRole", "");
+
+function appDate() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())}`;
+}
+
+function currentAppScore() {
+  try { return ivScoreOf(evalDims()); } catch (_) { return 0; }
+}
+
+function recordApp() {
+  const co = (document.getElementById("jdCo").value || "").trim();
+  const role = (document.getElementById("jdRole").value || "").trim() || PROFILE.intent || "";
+  if (!co && !role) {
+    document.getElementById("appAdd").textContent = "先填公司或岗位";
+    setTimeout(() => { document.getElementById("appAdd").textContent = "记录当前这一版"; }, 1800);
+    return;
+  }
+  const rec = {
+    id: "app" + Date.now(),
+    co, role,
+    date: appDate(),
+    jd: state.jd || "",
+    intent: PROFILE.intent || "",
+    selected: state.selected.slice(),
+    overrides: JSON.parse(JSON.stringify(state.overrides || {})),
+    skillsEdit: state.skillsEdit ? state.skillsEdit.slice() : null,
+    score: currentAppScore(),
+    status: 0
+  };
+  state.apps.unshift(rec);
+  LS.set("resume.apps", state.apps);
+  renderApps();
+}
+
+function restoreApp(id) {
+  const rec = state.apps.find(x => x.id === id);
+  if (!rec) return;
+  if (!confirm(`恢复到「${rec.co || "未填公司"} · ${rec.role || ""}」这一版？当前未保存的改动会被覆盖。`)) return;
+
+  state.jd = rec.jd || "";
+  document.getElementById("jd").value = state.jd;
+  document.getElementById("jdCo").value = rec.co || "";
+  document.getElementById("jdRole").value = rec.role || "";
+  state.jdCo = rec.co || "";
+  state.jdRole = rec.role || "";
+  LS.set("resume.jdCo", state.jdCo);
+  LS.set("resume.jdRole", state.jdRole);
+  LS.set("resume.jd", state.jd);
+  updateDocTitle();
+
+  state.analysis = analyzeJD(state.jd);
+  state.selected = (rec.selected || []).filter(id => PROJECTS.some(p => p.id === id));
+  state.overrides = JSON.parse(JSON.stringify(rec.overrides || {}));
+  LS.set("resume.overrides", state.overrides);
+  LS.set("resume.selected", state.selected);
+  state.touched = true;
+  LS.set("resume.touched", true);
+
+  if (rec.skillsEdit && rec.skillsEdit.length) {
+    state.skillsEdit = rec.skillsEdit.slice();
+    LS.set("resume.skills", state.skillsEdit);
+  } else {
+    clearSkillEdit();
+  }
+  state.skills = composeSkills(state.selected, currentOrder());
+
+  if (rec.intent) {
+    PROFILE.intent = rec.intent;
+    state.profile.intent = rec.intent;
+    state.intentManual = true;
+    LS.set("resume.intentManual", true);
+    saveProfile();
+  }
+
+  renderTodo(); renderJdChips(); renderProjects(); renderPaper();
+}
+
+function renderApps() {
+  const box = document.getElementById("appList");
+  const counts = APP_STATUS.map((_, i) => state.apps.filter(a => (a.status || 0) === i).length);
+  document.getElementById("appCount").textContent = state.apps.length + " 条";
+
+  const filter = document.getElementById("appStatusFilter");
+  filter.innerHTML = `<button class="chip${state.appFilter === "all" ? " hit" : ""}" data-f="all">全部 ${state.apps.length}</button>`
+    + APP_STATUS.map((label, i) =>
+        `<button class="chip${state.appFilter === i ? " hit" : ""}" data-f="${i}">${label} ${counts[i]}</button>`).join("");
+
+  if (!state.apps.length) {
+    box.innerHTML = `<div class="app-empty">还没有记录。粘完 JD、调到满意，点上面那个按钮存一份。</div>`;
+    return;
+  }
+
+  const list = state.apps.filter(a => state.appFilter === "all" || (a.status || 0) === state.appFilter);
+  if (!list.length) {
+    box.innerHTML = `<div class="app-empty">这个状态下面还没有记录。</div>`;
+    return;
+  }
+
+  box.innerHTML = list.map(a => {
+    const names = (a.selected || []).length + " 个项目";
+    const st = a.status || 0;
+    return `<div class="app-item">
+      <div class="app-top">
+        <span class="app-co">${edEsc(a.co || "未填公司")}</span>
+        <span class="app-role">${edEsc(a.role || "")}</span>
+        <span class="app-score">${a.score || "--"}</span>
+      </div>
+      <div class="app-meta">${edEsc(a.date)} · ${names} ·
+        <span class="app-status s${st}">${APP_STATUS[st]}</span></div>
+      <div class="app-tools">
+        <a href="#" data-restore="${a.id}">恢复这一版</a>
+        <a href="#" data-cycle="${a.id}">改状态</a>
+        <a href="#" data-del="${a.id}">删除</a>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* 顶栏/导出文件名跟着公司与岗位走，导出的 PDF 一眼能看出投的是哪家 */
+function updateDocTitle() {
+  const co = (document.getElementById("jdCo").value || "").trim();
+  const role = (document.getElementById("jdRole").value || "").trim();
+  const who = PROFILE.name && !isPlaceholder(PROFILE.name) ? PROFILE.name : "";
+  document.title = [who, co, role, "简历"].filter(Boolean).join("-");
+}
+
+document.getElementById("jdCo").value = state.jdCo;
+document.getElementById("jdRole").value = state.jdRole;
+updateDocTitle();
+
+["jdCo", "jdRole"].forEach(id => {
+  document.getElementById(id).addEventListener("input", () => {
+    state[id === "jdCo" ? "jdCo" : "jdRole"] = document.getElementById(id).value.trim();
+    LS.set("resume." + id, state[id === "jdCo" ? "jdCo" : "jdRole"]);
+    updateDocTitle();
+  });
+});
+
+document.getElementById("appAdd").onclick = recordApp;
+document.getElementById("appStatusFilter").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-f]");
+  if (!b) return;
+  state.appFilter = b.dataset.f === "all" ? "all" : Number(b.dataset.f);
+  renderApps();
+});
+document.getElementById("appList").addEventListener("click", (e) => {
+  const r = e.target.closest("[data-restore]");
+  if (r) { e.preventDefault(); restoreApp(r.dataset.restore); return; }
+
+  const c = e.target.closest("[data-cycle]");
+  if (c) {
+    e.preventDefault();
+    const rec = state.apps.find(x => x.id === c.dataset.cycle);
+    if (rec) {
+      rec.status = ((rec.status || 0) + 1) % APP_STATUS.length;
+      LS.set("resume.apps", state.apps);
+      renderApps();
+    }
+    return;
+  }
+
+  const d = e.target.closest("[data-del]");
+  if (d) {
+    e.preventDefault();
+    if (!confirm("删除这条投递记录？")) return;
+    state.apps = state.apps.filter(x => x.id !== d.dataset.del);
+    LS.set("resume.apps", state.apps);
+    renderApps();
+  }
+});
+
 /* 初始化：上次填过的 JD、选中的项目都会恢复，不用重新粘一遍。
    没有 JD 时先放一套通用组合，粘上 JD 后整页会被重算。 */
 updateAiState();
@@ -2617,6 +2846,7 @@ if (state.jd) {
 
 state.skills = composeSkills(state.selected, currentOrder());
 renderTodo();
+renderApps();
 renderJdChips();
 renderProjects();
 renderPaper();
