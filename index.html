@@ -84,8 +84,8 @@
   /* 字号全部用 em，跟着 --fs 一起缩放，这样“铺满页面”时是整体放大而不是只拉间距 */
   /* 抬头区固定字号：名字和联系方式不跟着正文一起放大，否则联系方式会被挤到第二行 */
   .paper h1 { font-size: 29.33px; margin: 0 0 calc(2px * var(--fill)); letter-spacing: 2px; }
-  .contact { font-size: 12px; color: #444; }
-  .contact span { margin-right: 10px; }
+  .contact { font-size: 11.5px; color: #444; }
+  .contact span { margin-right: 7px; }
   .intent { font-size: 13.33px; margin-top: calc(6px * var(--fill)); }
   .sec { margin-top: calc(10px * var(--fill)); }
   .sec-title { font-size: 1.095em; font-weight: 700; letter-spacing: 1px;
@@ -708,8 +708,8 @@ function renderPaper() {
       <h1>${ce("name", PROFILE.name)}</h1>
       <div class="contact">
         <span>出生年月：${ce("birth", PROFILE.birth)}</span>
-        <span>${ce("phone", PROFILE.phone)}</span>
-        <span>${ce("mail", PROFILE.mail)}</span>
+        <span>手机号：${ce("phone", PROFILE.phone)}</span>
+        <span>邮箱：${ce("mail", PROFILE.mail)}</span>
         <span>个人主页：<a href="https://${PROFILE.home}" target="_blank">${ce("home", PROFILE.home)}</a></span>
       </div>
       <div class="intent"><b>求职意向：</b>${ce("intent", PROFILE.intent)}</div>
@@ -1078,8 +1078,8 @@ function exportWord() {
     @page { size: A4; margin: 1.4cm 1.6cm; }
     body { font-family: "Microsoft YaHei"; font-size: ${fs(10.5)}; line-height: 1.5; color: #1a1a1a; }
     h1 { font-size: ${fs(22)}; margin: 0 0 ${gap(2)}; letter-spacing: 2pt; }
-    .contact { font-size: ${fs(9)}; color: #444; }
-    .contact span { margin-right: 12pt; }
+    .contact { font-size: ${fs(8.6)}; color: #444; }
+    .contact span { margin-right: 5.5pt; }
     .intent { font-size: ${fs(10)}; margin-top: ${gap(6)}; }
     .sec { margin-top: ${gap(10)}; }
     .sec-title { font-size: ${fs(11.5)}; font-weight: bold; border-bottom: 1px solid #333;
