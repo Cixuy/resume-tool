@@ -19,7 +19,20 @@
   .brand { display: flex; align-items: baseline; gap: 10px; }
   .brand h1 { font-size: 16px; margin: 0; font-weight: 600; }
   .brand span { font-size: 12px; color: var(--muted); }
-  .actions { display: flex; gap: 8px; margin-left: auto; }
+  .actions { display: flex; gap: 8px; margin-left: auto; align-items: center; }
+  /* 面试评估是主功能，单独一套强调样式 */
+  .btn-iv { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;
+            padding: 7px 14px; border-radius: 7px; cursor: pointer; color: #fff;
+            background: linear-gradient(135deg, #1f2a44, #33507e);
+            border: 1px solid #1f2a44; box-shadow: 0 2px 8px rgba(31, 42, 68, .28);
+            transition: transform .12s ease, box-shadow .12s ease, filter .12s ease; }
+  .btn-iv:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(31, 42, 68, .34); filter: brightness(1.06); }
+  .btn-iv .iv-ico { font-size: 11px; opacity: .8; }
+  .btn-iv .iv-badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 9px;
+                      background: rgba(255,255,255,.18); color: #fff; font-variant-numeric: tabular-nums; }
+  .btn-iv .iv-badge.hot { background: #f59e0b; color: #1f2329; }
+  .btn-iv .iv-badge.cold { background: rgba(255,255,255,.14); }
+
   button { font-family: inherit; font-size: 13px; padding: 7px 14px; border-radius: 6px;
            border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
   button:hover { border-color: #c9cdd4; }
@@ -261,7 +274,9 @@
   <div class="actions">
     <button id="btnSample" class="mini">示例 JD</button>
     <button id="btnAi" class="mini">AI 分析</button>
-    <button id="btnIv" class="mini">面试评估</button>
+    <button id="btnIv" class="btn-iv" title="按当前 JD 和简历打分，并给出面试题">
+      <span class="iv-ico">◈</span>面试评估<span class="iv-badge" id="ivBadge">--</span>
+    </button>
     <button id="btnWord">导出 Word</button>
     <button id="btnPdf" class="primary">导出 PDF</button>
   </div>
@@ -1052,6 +1067,18 @@ function renderPaper() {
   `;
 
   fitPaper();
+  updateIvBadge();
+}
+
+/* 顶栏那个分数不是装饰：跟着 JD、项目、简历内容实时变 */
+function updateIvBadge() {
+  const el = document.getElementById("ivBadge");
+  if (!el) return;
+  let total = 0;
+  try { total = ivScoreOf(evalDims()); } catch (_) { total = 0; }
+  el.textContent = total ? total : "--";
+  el.classList.toggle("hot", total >= 80);
+  el.classList.toggle("cold", total > 0 && total < 60);
 }
 
 /* ------------------------------------------------------------------
