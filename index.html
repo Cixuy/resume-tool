@@ -153,6 +153,10 @@
         简历上带虚线的都是还没填的占位内容。点一下直接跳到那一处，改完自动保存。
       </div>
       <div class="chips" id="todoList"></div>
+      <div class="hint" style="margin-top:10px">
+        个人信息、照片、JD、项目选择、AI 配置都存在这台浏览器里，下次打开直接是上次的样子。
+        <a href="#" id="btnReset">清空本地记录</a>
+      </div>
     </div>
 
     <div class="panel">
@@ -450,12 +454,13 @@ const state = {
   photo: localStorage.getItem("resume.photo") || null,
   profile: LS.get("resume.profile", {}),
   overrides: LS.get("resume.overrides", {}),
-  selected: [],
+  selected: LS.get("resume.selected", []),
   skills: [],
-  jd: "",
+  jd: LS.get("resume.jd", ""),
   analysis: { text: "", dirScore: {} },
   aiScores: null,
-  touched: false,
+  touched: LS.get("resume.touched", false),
+  intentManual: LS.get("resume.intentManual", false),
   ai: LS.get("resume.ai", { base: "", model: "", key: "" })
 };
 
@@ -630,6 +635,8 @@ function toggle(id) {
     if (state.selected.length >= 3) state.selected.shift();
     state.selected.push(id);
   }
+  LS.set("resume.touched", true);
+  LS.set("resume.selected", state.selected);
   state.skills = composeSkills(state.selected, currentOrder());
   renderProjects(); renderPaper();
 }
@@ -834,7 +841,9 @@ document.addEventListener("input", (e) => {
   el.classList.toggle("ph", isPlaceholder(val));   // 填上了就把虚线去掉
 
   if (k === "intent") {
-    // 手改的意向就地保存，下次粘 JD 会被新的推断覆盖
+    // 手改的意向就地保存；标记一下，刷新页面后不再被 JD 推断覆盖
+    state.intentManual = true;
+    LS.set("resume.intentManual", true);
     PROFILE.intent = val;
     state.profile.intent = val;
     saveProfile();
@@ -1199,6 +1208,10 @@ jdEl.addEventListener("input", () => {
     state.skills = composeSkills(state.selected, currentOrder());
     renderProjects();
 
+    LS.set("resume.jd", state.jd);
+    // 换了 JD 就按新 JD 重新推断；手改过的意向只在刷新页面时保留
+    state.intentManual = false;
+    LS.set("resume.intentManual", false);
     setIntent(inferIntent(state.jd));
   }, 250);
 });
@@ -1207,6 +1220,7 @@ function autoPick(n) {
   const ranked = PROJECTS.map(p => ({ p, ...scoreProject(p, state.analysis) }))
     .sort((a, b) => b.score - a.score).slice(0, n || 2).map(x => x.p.id);
   state.selected = ranked;
+  LS.set("resume.selected", state.selected);
 }
 function renderJdChips() {
   const box = document.getElementById("jdChips");
@@ -1292,16 +1306,38 @@ document.getElementById("btnAiClear").onclick = () => {
   });
 });
 
+document.getElementById("btnReset").onclick = (e) => {
+  e.preventDefault();
+  if (!confirm("清空这台浏览器里保存的简历数据（个人信息、照片、JD、项目选择、AI 配置）？此操作不能撤销。")) return;
+  Object.keys(localStorage)
+    .filter(k => k.indexOf("resume.") === 0)
+    .forEach(k => localStorage.removeItem(k));
+  location.reload();
+};
+
 document.getElementById("btnWord").onclick = exportWord;
 document.getElementById("btnPdf").onclick = () => {
   document.getElementById("statusText").textContent = "在打印窗口里选择「另存为 PDF」";
   window.print();
 };
 
-/* 初始化：没有 JD 时先放一套通用组合，贴上 JD 后整页会被重算 */
+/* 初始化：上次填过的 JD、选中的项目都会恢复，不用重新粘一遍。
+   没有 JD 时先放一套通用组合，粘上 JD 后整页会被重算。 */
 updateAiState();
-state.selected = DEFAULT_PICK.filter(id => PROJECTS.some(p => p.id === id));
-state.skills = composeSkills(state.selected, DEFAULT_ORDER);
+
+const saved = state.selected.filter(id => PROJECTS.some(p => p.id === id));
+if (state.jd) {
+  jdEl.value = state.jd;
+  state.analysis = analyzeJD(state.jd);
+  state.selected = saved;
+  if (!state.selected.length && !state.touched) autoPick(2);
+  // 意向按 JD 重算，但用户手改过就保留他写的那句
+  if (!state.intentManual) PROFILE.intent = inferIntent(state.jd);
+} else {
+  state.selected = saved.length ? saved : DEFAULT_PICK.filter(id => PROJECTS.some(p => p.id === id));
+}
+
+state.skills = composeSkills(state.selected, currentOrder());
 renderTodo();
 renderJdChips();
 renderProjects();
