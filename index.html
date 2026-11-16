@@ -43,12 +43,6 @@
   input:focus, textarea:focus { outline: 2px solid #dbeafe; border-color: var(--accent); }
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-  .roles { display: flex; flex-wrap: wrap; gap: 6px; }
-  .role-btn { font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer;
-              border: 1px solid var(--line); background: #fff; color: #4e5969; }
-  .role-btn:hover { border-color: #c9cdd4; }
-  .role-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .chip { font-size: 11px; padding: 3px 8px; border-radius: 4px;
           background: #eef2ff; color: #3730a3; border: 1px solid #e0e7ff; }
@@ -152,13 +146,11 @@
 <div class="layout">
   <div class="left">
     <div class="panel">
-      <h2>岗位预设 <em>点击套用</em></h2>
-      <div class="roles" id="roleList"></div>
-    </div>
-
-    <div class="panel">
-      <h2>目标岗位 JD <em>粘贴后自动分析</em></h2>
-      <textarea id="jd" rows="8" placeholder="把招聘要求整段粘进来"></textarea>
+      <h2>目标岗位 JD <em>粘贴后自动生成</em></h2>
+      <div class="hint">
+        一整段粘进来，求职意向、项目组合、技能顺序都会按它重算。没有 JD 也可以手动挑项目。
+      </div>
+      <textarea id="jd" rows="9" placeholder="把招聘要求整段粘进来"></textarea>
       <div class="chips" id="jdChips"></div>
     </div>
 
@@ -248,7 +240,8 @@ const PROJECTS = [
     role: "独立开发", period: "2026/09 - 2026/10",
     direction: ["ai", "backend"], distinct: 1.0,
     tags: ["java", "spring boot", "springboot", "mysql", "ai", "agent", "mcp", "rag",
-           "向量", "记忆", "上下文", "大模型", "工具调用", "vue", "规则引擎", "code review"],
+           "向量", "记忆", "上下文", "大模型", "工具调用", "vue", "规则引擎", "code review",
+           "静态分析", "代码质量", "缺陷", "代码检查"],
     stack: "Spring Boot 3 + MyBatis + MySQL + Vue 3 + MCP",
     skills: [
       ["语言", "Java"], ["框架", "Spring Boot"], ["框架", "MyBatis"],
@@ -270,7 +263,7 @@ const PROJECTS = [
     role: "独立开发", period: "2026/09 - 2026/10",
     direction: ["cpp", "backend"], distinct: 1.0,
     tags: ["c++", "cpp", "epoll", "reactor", "网络编程", "socket", "linux", "性能",
-           "http", "并发", "系统编程", "静态分析", "底层"],
+           "http", "并发", "系统编程", "静态分析", "底层", "缺陷", "代码检查"],
     stack: "C++17 + epoll/WSAPoll + 手写 HTTP",
     skills: [
       ["语言", "C++17（RAII、STL、移动语义）"], ["系统", "epoll（Reactor）"],
@@ -358,7 +351,8 @@ const PROJECTS = [
     role: "核心开发", period: "2026/07 - 2026/08",
     direction: ["backend", "ai"], distinct: 1.0,
     tags: ["java", "spring boot", "springboot", "mysql", "redis", "influxdb", "时序",
-           "websocket", "ai", "agent", "rag", "大模型", "向量", "milvus", "运维", "监控", "告警"],
+           "websocket", "ai", "agent", "rag", "大模型", "向量", "milvus", "运维", "监控", "告警",
+           "可观测", "自愈", "巡检", "故障", "指标"],
     stack: "Spring Boot + Vue 3 + MySQL + InfluxDB + Milvus",
     skills: [
       ["语言", "Java"], ["框架", "Spring Boot"], ["存储", "MySQL（分表）"],
@@ -399,28 +393,22 @@ const PROJECTS = [
 ];
 
 /* ------------------------------------------------------------------
-   岗位预设
+   JD 方向 -> 专业技能行的优先顺序
+   （原来靠人工点岗位预设决定，现在由 JD 里命中最多的方向自动决定）
 ------------------------------------------------------------------ */
-const ROLE_PRESETS = [
-  { id: "java-backend", label: "Java 后端", intent: "Java 后端开发工程师",
-    projects: ["serverops", "code-review-agent"],
-    order: ["语言", "框架", "存储", "系统", "AI", "工程"] },
-  { id: "ai-agent", label: "AI Agent", intent: "AI Agent 应用开发工程师",
-    projects: ["code-review-agent", "cpp-code-insight"],
-    order: ["语言", "AI", "框架", "存储", "工程", "系统"] },
-  { id: "cpp-systems", label: "C++ 工程师", intent: "C++ 后端 / 系统开发工程师",
-    projects: ["cpp-code-insight", "code-review-agent"],
-    order: ["语言", "系统", "性能", "工程", "存储", "框架"] },
-  { id: "server-ops", label: "服务器工程师", intent: "服务器开发 / 运维开发工程师",
-    projects: ["serverops", "go-gateway"],
-    order: ["语言", "服务治理", "可观测", "存储", "系统", "工程"] },
-  { id: "test-dev", label: "测试开发", intent: "测试开发工程师",
-    projects: ["api-testkit", "code-review-agent"],
-    order: ["语言", "测试", "工程", "框架", "存储"] },
-  { id: "go-cloud", label: "Go 云原生", intent: "Go 服务端开发工程师",
-    projects: ["go-gateway", "gesture-music"],
-    order: ["语言", "服务治理", "可观测", "系统", "存储", "工程"] }
-];
+const DIR_ORDER = {
+  ai:       ["语言", "AI", "框架", "存储", "工程", "系统"],
+  backend:  ["语言", "框架", "存储", "系统", "AI", "工程"],
+  go:       ["语言", "服务治理", "可观测", "系统", "存储", "工程"],
+  ops:      ["语言", "服务治理", "可观测", "存储", "系统", "工程"],
+  cpp:      ["语言", "系统", "性能", "工程", "存储", "框架"],
+  test:     ["语言", "测试", "工程", "框架", "存储"],
+  frontend: ["语言", "前端", "框架", "工程", "存储"]
+};
+const DEFAULT_ORDER = ["语言", "框架", "存储", "系统", "工程", "AI"];
+
+/* 没粘 JD 时的初始项目：覆盖面最广、最能打的两个 */
+const DEFAULT_PICK = ["code-review-agent", "serverops"];
 
 const DIRECTIONS = {
   ai: ["ai", "agent", "大模型", "llm", "rag", "向量", "智能体", "mcp", "prompt", "推理"],
@@ -428,7 +416,8 @@ const DIRECTIONS = {
   go: ["go", "golang", "云原生", "kubernetes", "k8s", "docker"],
   cpp: ["c++", "cpp", "linux", "底层", "网络编程", "内核", "嵌入式", "驱动"],
   test: ["测试", "自动化", "质量", "qa", "sdet", "用例", "接口测试"],
-  frontend: ["vue", "react", "前端", "javascript", "typescript", "canvas"]
+  frontend: ["vue", "react", "前端", "javascript", "typescript", "canvas"],
+  ops: ["运维", "sre", "devops", "服务器", "监控", "告警", "巡检", "可观测", "故障", "自愈", "发布部署"]
 };
 
 const SKILL_LABEL = {
@@ -449,8 +438,6 @@ const LS = {
 
 const state = {
   photo: localStorage.getItem("resume.photo") || null,
-  roleId: LS.get("resume.role", "java-backend"),
-  intentSource: LS.get("resume.intentSource", "preset"),
   profile: LS.get("resume.profile", {}),
   overrides: LS.get("resume.overrides", {}),
   selected: [],
@@ -472,11 +459,23 @@ function saveProfile() { LS.set("resume.profile", state.profile); }
 /* ------------------------------------------------------------------
    匹配：关键词打分 + 项目稀缺度
 ------------------------------------------------------------------ */
+/* 英文关键词按词边界匹配：否则 reactor 里的 react 会把 C++ 岗位判成前端岗，
+   golang 里的 go、django 里的 go 同理 */
+function kwHit(text, kw) {
+  if (!/[a-z]/i.test(kw)) return text.includes(kw);
+  const esc = kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // 左边是字母/数字才要求边界；右边同理。c++ 这种以符号结尾的不能再要求右边界，
+  // 否则 C++11/14/17 里的 c++ 就匹配不到了
+  const left = /^[a-z0-9]/i.test(kw) ? "(^|[^a-z0-9+#])" : "";
+  const right = /[a-z0-9]$/i.test(kw) ? "(?![a-z0-9+#])" : "";
+  return new RegExp(left + esc + right).test(text);
+}
+
 function analyzeJD(text) {
   const lower = (text || "").toLowerCase();
   const dirScore = {};
   for (const [dir, words] of Object.entries(DIRECTIONS)) {
-    for (const w of words) if (lower.includes(w)) dirScore[dir] = (dirScore[dir] || 0) + 1;
+    for (const w of words) if (kwHit(lower, w)) dirScore[dir] = (dirScore[dir] || 0) + 1;
   }
   return { text: lower, dirScore };
 }
@@ -485,10 +484,24 @@ function scoreProject(proj, analysis) {
   const lower = analysis.text || "";
   let hitCount = 0;
   const matched = [];
-  for (const tag of proj.tags) if (lower.includes(tag)) { hitCount++; matched.push(tag); }
+  for (const tag of proj.tags) if (kwHit(lower, tag)) { hitCount++; matched.push(tag); }
+
+  // 主方向算满分，次方向减半——否则每个项目都挂着 backend，一律 +6 分，分不出高下
+  const W = [1, 0.5, 0.25];
   let dirBonus = 0;
-  for (const d of proj.direction) if (analysis.dirScore[d]) dirBonus += analysis.dirScore[d] * 2;
-  const raw = (hitCount * 3 + dirBonus) * (proj.distinct || 1);
+  proj.direction.forEach((d, i) => {
+    if (analysis.dirScore[d]) dirBonus += analysis.dirScore[d] * 2 * (W[i] || 0.15);
+  });
+
+  let raw = (hitCount * 3 + dirBonus) * (proj.distinct || 1);
+
+  // 主方向跟 JD 完全不对口时压一档，避免靠顺手命中两个通用词挤上来
+  const main = proj.direction[0];
+  const jdHasDir = Object.values(analysis.dirScore || {}).some(n => n > 0);
+  if (main && jdHasDir && !(analysis.dirScore[main] > 0)) raw *= 0.6;
+  // 一个标签都没命中，说明这个 JD 压根没提它做过的事，不能只靠方向分排上来
+  if (!hitCount && jdHasDir) raw *= 0.4;
+
   return { score: Math.round(raw), hitCount, matched, dirBonus };
 }
 
@@ -555,57 +568,18 @@ function composeSkills(projectIds, order) {
    渲染
 ------------------------------------------------------------------ */
 function currentOrder() {
-  const r = ROLE_PRESETS.find(x => x.id === state.roleId);
-  return r && r.order ? r.order : null;
+  const ds = (state.analysis && state.analysis.dirScore) || {};
+  let best = null, max = 0;
+  for (const [dir, n] of Object.entries(ds)) if (n > max) { max = n; best = dir; }
+  return (best && DIR_ORDER[best]) || DEFAULT_ORDER;
 }
 
-// 求职意向与岗位预设的唯一入口：改一边，另一边跟着变
-function setIntent(text, source, roleId) {
+// 求职意向只有一个来源：JD（或用户在简历上直接改）
+function setIntent(text) {
   PROFILE.intent = text;
-  state.intentSource = source;
-  state.roleId = roleId;
-  if (source !== "custom") {
-    state.profile.intent = text;
-    saveProfile();
-  }
-  LS.set("resume.intentSource", source);
-  LS.set("resume.role", roleId || "");
-  renderRoles();
+  state.profile.intent = text;
+  saveProfile();
   renderPaper();
-}
-
-// 由岗位名反查对应的预设按钮
-function roleByIntent(intent) {
-  const t = (intent || "").toLowerCase();
-  if (t.includes("测试")) return "test-dev";
-  if (t.includes("agent") || t.includes("智能体")) return "ai-agent";
-  if (t.includes("c++")) return "cpp-systems";
-  if (t.includes("go")) return "go-cloud";
-  if (t.includes("服务器") || t.includes("运维")) return "server-ops";
-  if (t.includes("java") || t.includes("后端")) return "java-backend";
-  return null;
-}
-
-function renderRoles() {
-  const box = document.getElementById("roleList");
-  box.innerHTML = "";
-  for (const r of ROLE_PRESETS) {
-    const b = document.createElement("button");
-    b.className = "role-btn" + (r.id === state.roleId ? " on" : "");
-    b.textContent = r.label;
-    b.onclick = () => applyRole(r.id);
-    box.appendChild(b);
-  }
-}
-
-function applyRole(roleId) {
-  const role = ROLE_PRESETS.find(r => r.id === roleId);
-  if (!role) return;
-  state.touched = false;
-  state.selected = role.projects.filter(id => PROJECTS.some(p => p.id === id));
-  state.skills = composeSkills(state.selected, role.order || null);
-  renderProjects();
-  setIntent(role.intent, "preset", roleId);   // 点预设一定改写意向，不再看 JD 是否为空
 }
 
 function renderProjects() {
@@ -794,12 +768,7 @@ document.addEventListener("input", (e) => {
   const val = el.innerText.trim();
 
   if (k === "intent") {
-    // 手动改过之后不再跟随预设，左侧高亮取消
-    state.intentSource = "custom";
-    state.roleId = null;
-    LS.set("resume.intentSource", "custom");
-    LS.set("resume.role", "");
-    renderRoles();
+    // 手改的意向就地保存，下次粘 JD 会被新的推断覆盖
     PROFILE.intent = val;
     state.profile.intent = val;
     saveProfile();
@@ -1152,6 +1121,7 @@ jdEl.addEventListener("input", () => {
   state.jd = jdEl.value;
   clearTimeout(jdTimer);
   jdTimer = setTimeout(() => {
+    // 分析必须在选项目之前：技能行顺序要按 JD 的主方向来排
     state.analysis = analyzeJD(state.jd);
     state.aiScores = null;
     renderJdChips();
@@ -1160,9 +1130,7 @@ jdEl.addEventListener("input", () => {
     state.skills = composeSkills(state.selected, currentOrder());
     renderProjects();
 
-    // 贴 JD 是更晚的动作，意向以 JD 为准，并把左侧高亮切到对应预设
-    const guessed = inferIntent(state.jd);
-    setIntent(guessed, "jd", roleByIntent(guessed));
+    setIntent(inferIntent(state.jd));
   }, 250);
 });
 
@@ -1175,7 +1143,7 @@ function renderJdChips() {
   const box = document.getElementById("jdChips");
   box.innerHTML = "";
   const labels = { ai: "AI/Agent", backend: "后端", go: "Go/云原生",
-                   cpp: "C++/底层", test: "测试", frontend: "前端" };
+                   cpp: "C++/底层", test: "测试", frontend: "前端", ops: "运维/服务器" };
   let any = false;
   for (const [dir, n] of Object.entries(state.analysis.dirScore || {})) {
     if (!n) continue;
@@ -1261,19 +1229,13 @@ document.getElementById("btnPdf").onclick = () => {
   window.print();
 };
 
-/* 初始化 */
+/* 初始化：没有 JD 时先放一套通用组合，贴上 JD 后整页会被重算 */
 updateAiState();
-if (state.intentSource === "custom" && PROFILE.intent) {
-  // 用户手改过意向：保留文案，左侧不高亮
-  state.roleId = null;
-  const role = ROLE_PRESETS.find(r => r.id === LS.get("resume.role", "")) || ROLE_PRESETS[0];
-  state.selected = role.projects.slice();
-  state.skills = composeSkills(state.selected, role.order);
-  renderRoles(); renderProjects(); renderPaper();
-} else {
-  applyRole(ROLE_PRESETS.some(r => r.id === state.roleId) ? state.roleId : ROLE_PRESETS[0].id);
-}
+state.selected = DEFAULT_PICK.filter(id => PROJECTS.some(p => p.id === id));
+state.skills = composeSkills(state.selected, DEFAULT_ORDER);
 renderJdChips();
+renderProjects();
+renderPaper();
 </script>
 </body>
 </html>
