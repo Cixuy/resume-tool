@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>简历编排工具</title>
+<style>
+  :root {
+    --ink: #1f2329;
+    --muted: #6b7280;
+    --line: #e5e6eb;
+    --accent: #2563eb;
+    --panel: #ffffff;
+    --bg: #f4f5f7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  /* 顶部工具条 */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 12px 24px;
+    background: #fff; border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: baseline; gap: 10px; }
+  .brand h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  .brand span { font-size: 12px; color: var(--muted); }
+  .actions { display: flex; gap: 8px; }
+  button {
+    font-family: inherit; font-size: 13px; padding: 7px 14px;
+    border-radius: 6px; border: 1px solid var(--line); background: #fff;
+    color: var(--ink); cursor: pointer;
+  }
+  button:hover { border-color: #c9cdd4; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: #1d4ed8; }
+
+  /* 主体两栏 */
+  .layout {
+    display: grid; grid-template-columns: 420px 1fr;
+    gap: 20px; padding: 20px 24px 60px; align-items: start;
+  }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px;
+  }
+  .panel + .panel { margin-top: 16px; }
+  .panel h2 {
+    font-size: 13px; margin: 0 0 10px; font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel h2 em { font-style: normal; font-weight: 400; color: var(--muted); font-size: 12px; }
+
+  label { display: block; font-size: 12px; color: var(--muted); margin: 10px 0 4px; }
+  input[type=text], textarea, select {
+    width: 100%; font-family: inherit; font-size: 13px; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+    background: #fff;
+  }
+  textarea { resize: vertical; line-height: 1.6; }
+  input:focus, textarea:focus { outline: 2px solid #dbeafe; border-color: var(--accent); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .roles { display: flex; flex-wrap: wrap; gap: 6px; }
+  .role {
+    font-size: 12px; padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--line); background: #fff; color: #4e5969;
+  }
+  .role:hover { border-color: #c9cdd4; }
+  .role.on { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    background: #eef2ff; color: #3730a3; border: 1px solid #e0e7ff;
+  }
+  .chip.hit { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+
+  /* 项目推荐列表 */
+  .proj {
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .proj:hover { border-color: #c9cdd4; }
+  .proj.on { border-color: var(--accent); background: #f8faff; }
+  .proj-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .proj-name { font-size: 13px; font-weight: 600; }
+  .score { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .score b { color: var(--accent); font-size: 13px; }
+  .proj-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .proj-why { font-size: 11px; color: #166534; margin-top: 4px; line-height: 1.6; }
+
+  /* 简历预览：A4 */
+  .preview-wrap { position: sticky; top: 78px; }
+  .paper {
+    width: 794px; min-height: 1123px; margin: 0 auto;
+    background: #fff; padding: 42px 48px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.08);
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    color: #1a1a1a; font-size: 10.5pt; line-height: 1.55;
+  }
+  .paper h1 { font-size: 22pt; margin: 0 0 2px; letter-spacing: 2px; }
+  .contact { font-size: 9pt; color: #444; }
+  .contact span { margin-right: 12px; }
+  .intent { font-size: 10pt; margin-top: 6px; }
+  .intent b { font-weight: 600; }
+  .sec { margin-top: 12px; }
+  .sec-title {
+    font-size: 11.5pt; font-weight: 700; letter-spacing: 1px;
+    border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 6px;
+  }
+  .edu-line { display: flex; justify-content: space-between; }
+  .muted { color: #444; }
+  .proj-item { margin-bottom: 8px; }
+  .proj-title { display: flex; justify-content: space-between; font-weight: 700; font-size: 10.5pt; }
+  .proj-title .role { font-weight: 400; color: #444; font-size: 10pt; }
+  .proj-desc { font-size: 9.5pt; color: #333; margin: 2px 0 3px; }
+  .proj-url { font-size: 9pt; color: #555; }
+  .paper a { color: #1a4fb4; text-decoration: none; }
+  ul { margin: 3px 0 0; padding-left: 16px; }
+  li { font-size: 9.8pt; margin-bottom: 2px; line-height: 1.5; }
+  li b { font-weight: 600; }
+
+  .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
+  .hidden { display: none !important; }
+
+  /* 打印：只留 A4 */
+  @media print {
+    @page { size: A4; margin: 0; }
+    body { background: #fff; }
+    .topbar, .layout > .left, .preview-wrap > .panel-hint { display: none !important; }
+    .layout { display: block; padding: 0; }
+    .preview-wrap { position: static; }
+    .paper { box-shadow: none; width: 210mm; min-height: 297mm; margin: 0; padding: 14mm 16mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <h1>简历编排工具</h1>
+    <span id="statusText">粘贴 JD 后自动推荐项目</span>
+  </div>
+  <div class="actions">
+    <button id="btnSample">填入示例 JD</button>
+    <button id="btnWord">导出 Word</button>
+    <button id="btnPdf" class="primary">导出 PDF</button>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- 左栏：输入与选择 -->
+  <div class="left">
+    <div class="panel">
+      <h2>岗位预设 <em>点击套用</em></h2>
+      <div class="roles" id="roleList"></div>
+      <div class="hint" style="margin-top:8px">套用后会切换项目组合、求职意向与技能排序，之后再贴 JD 做微调。</div>
+    </div>
+
+    <div class="panel">
+      <h2>目标岗位 JD <em>粘贴后自动分析</em></h2>
+      <textarea id="jd" rows="9" placeholder="把招聘要求整段粘进来，例如：&#10;1. 熟悉 Java 基础，掌握 Spring Boot、MyBatis；&#10;2. 熟悉 MySQL、Redis，了解消息队列；&#10;3. 有 AI Agent、RAG 相关经验优先"></textarea>
+      <div class="chips" id="jdChips"></div>
+    </div>
+
+    <div class="panel">
+      <h2>项目推荐 <em id="pickCount">已选 0 个</em></h2>
+      <div id="projList"></div>
+      <div class="hint" style="margin-top:10px">
+        点选项目加入简历，点击顺序即简历中的顺序。建议只放 2–3 个。
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>基本信息</h2>
+      <div class="row2">
+        <div><label>姓名</label><input type="text" id="fName" placeholder="你的姓名"></div>
+        <div><label>出生年月</label><input type="text" id="fBirth" placeholder="2000/01"></div>
+      </div>
+      <div class="row2">
+        <div><label>手机</label><input type="text" id="fPhone" placeholder="13800000000"></div>
+        <div><label>邮箱</label><input type="text" id="fMail" placeholder="you@example.com"></div>
+      </div>
+      <label>个人主页</label>
+      <input type="text" id="fHome" placeholder="your-site.github.io">
+      <label>求职意向</label>
+      <input type="text" id="fIntent" placeholder="Java 后端开发">
+    </div>
+  </div>
+
+  <!-- 右栏：预览 -->
+  <div class="preview-wrap">
+    <div class="panel-hint hint" style="text-align:center;margin-bottom:8px">
+      下面是导出效果预览，A4 单页
+    </div>
+    <div class="paper" id="paper"></div>
+  </div>
+</div>
+
+<script src="profile.js" onerror="void 0"></script>
+<script>
+/* ------------------------------------------------------------------
+   基础信息
+------------------------------------------------------------------ */
+const PROFILE = {
+  name: "（姓名）",
+  birth: "（出生年月）",
+  phone: "（手机）",
+  mail: "（邮箱）",
+  home: "（个人主页）",
+  intent: "Java 后端开发",
+  edu: {
+    school: "（学校）",
+    major: "（专业）",
+    degree: "本科",
+    period: "20xx/09 - 20xx/07",
+    courses: "（主修课程）"
+  },
+  extra: "（其他补充，如语言证书）"
+};
+
+/* ------------------------------------------------------------------
+   项目库：每个项目带标签（用于与 JD 匹配）与简历用的条目
+   tags 越具体越好，匹配时按命中数量加权
+------------------------------------------------------------------ */
+const PROJECTS = [
+  {
+    id: "smart-site",
+    url: "https://github.com/Cixuy/smart-site",
+    name: "智慧工地安全智能监控平台",
+    role: "核心开发",
+    period: "2026/02 - 2026/04",
+    direction: ["backend", "frontend"],
+    tags: ["java", "spring boot", "springboot", "mybatis", "mysql", "vue", "websocket",
+           "redis", "权限", "rbac", "jwt", "接口", "restful", "物联网", "实时"],
+    stack: "Spring Boot + MyBatis + MySQL + Vue 3",
+    desc: "面向建筑工地的一体化安全管理平台，覆盖设备台账、塔吊与升降机实时监控、AI 视频告警联动与 3D 可视化大屏。",
+    bullets: [
+      "<b>认证与权限</b>：基于 Spring Security + JWT 实现无状态认证与 RBAC 控制，封装全局拦截器与 ThreadLocal 上下文，用户信息零侵入透传",
+      "<b>实时推送</b>：用 WebSocket 推送塔吊运行参数、环境指标与告警截图，替代 HTTP 轮询，监控数据延迟从秒级降到毫秒级",
+      "<b>缓存治理</b>：Redis 缓存高频设备信息，配合线程池与 Redisson 逻辑过期解决缓存击穿，随机 TTL 规避雪崩",
+      "<b>告警闭环</b>：设计「生成 → 推送 → 接单 → 处置 → 恢复」状态机，用状态流转约束非法操作"
+    ]
+  },
+  {
+    id: "serverops",
+    url: "https://github.com/Cixuy/serverops",
+    name: "ServerOps 服务器智能运维平台",
+    role: "核心开发",
+    period: "2026/07 - 2026/08",
+    direction: ["backend", "ai"],
+    tags: ["java", "spring boot", "springboot", "mysql", "redis", "influxdb", "时序",
+           "websocket", "ai", "agent", "rag", "大模型", "向量", "milvus", "运维", "监控", "告警"],
+    stack: "Spring Boot + Vue 3 + MySQL + InfluxDB + Milvus",
+    desc: "面向中小企业的服务器运维平台，集成指标采集、实时监控、告警闭环、自愈规则引擎与 AI 诊断。",
+    bullets: [
+      "<b>双通道实时推送</b>：WebSocket 拆分前端通道与采集端通道，指标 5 秒级推送、配置变更秒级下发，替代 HTTP 轮询的高延迟与无效请求",
+      "<b>存储分层</b>：MySQL 存业务数据并对操作日志分表，InfluxDB 存时序指标，用 Flux 做多时间窗聚合，避免单表膨胀拖慢查询",
+      "<b>RAG 链路</b>：Milvus + Embedding 构建运维知识库，实现故障手册切片入库与 Top-K 召回，支撑告警场景的语义检索问答",
+      "<b>多 Agent 编排</b>：基于 Planner-Executor-Supervisor 流程把告警内容与检索上下文拼接，生成结构化诊断报告"
+    ]
+  },
+  {
+    id: "code-review-agent",
+    url: "https://github.com/Cixuy/code-review-agent",
+    name: "代码评审智能体",
+    role: "独立开发",
+    period: "2026/11",
+    direction: ["ai", "backend"],
+    tags: ["java", "spring boot", "springboot", "mysql", "ai", "agent", "mcp", "rag",
+           "向量", "记忆", "上下文", "大模型", "工具调用", "vue", "规则引擎", "code review"],
+    stack: "Spring Boot 3 + MyBatis + MySQL + Vue 3 + MCP",
+    desc: "把代码评审做成可被外部 AI 客户端调用的服务：双引擎出问题清单，带历史问题检索与项目记忆。",
+    bullets: [
+      "<b>双引擎合并</b>：C++ 静态分析服务负责正则类规则，Java 规则引擎负责跨行判断，两路结果按「规则 + 行号」去重后统一排序",
+      "<b>MCP 协议接入</b>：基于官方 SDK 暴露 6 个工具（评审、检索、记忆读写），SSE 端点可被任意 MCP 客户端挂载调用",
+      "<b>检索与记忆</b>：本地嵌入模型离线向量化历史问题，新代码按片段召回相似结论；项目级记忆支持「忽略某条规则」并即时生效",
+      "<b>容错降级</b>：静态服务不可用时自动退回本地规则，报告标注数据来源，不阻断评审流程"
+    ]
+  },
+  {
+    id: "cpp-code-insight",
+    url: "https://github.com/Cixuy/cpp-code-insight",
+    name: "C++ 代码静态分析服务",
+    role: "独立开发",
+    period: "2026/11",
+    direction: ["cpp", "backend"],
+    tags: ["c++", "cpp", "epoll", "reactor", "网络编程", "socket", "linux", "性能",
+           "http", "并发", "系统编程", "静态分析"],
+    stack: "C++17 + epoll/WSAPoll + 手写 HTTP",
+    desc: "作为代码评审 Agent 的工具后端，承担高频正则扫描与代码指标计算。",
+    bullets: [
+      "<b>跨平台事件轮询</b>：抽象 Poller 接口，Linux 走 epoll、Windows 走 WSAPoll，上层 Reactor 与平台解耦",
+      "<b>Reactor 实现</b>：单线程非阻塞 IO，写缓冲挂可写事件等待发送，支持一次读入多个流水线请求",
+      "<b>协议与解析</b>：手写 HTTP 报文解析与响应拼接，按 Content-Length 处理请求体，零拷贝读取缓冲",
+      "<b>性能</b>：单连接 2000 次请求压测 8070 QPS（Linux 环境），p99 延迟 0.17ms"
+    ]
+  },
+  {
+    id: "go-gateway",
+    url: "https://github.com/Cixuy/go-gateway",
+    name: "Go 微服务网关",
+    role: "独立开发",
+    period: "2026/11",
+    direction: ["go", "backend"],
+    tags: ["go", "golang", "网关", "限流", "熔断", "中间件", "prometheus", "监控",
+           "jwt", "鉴权", "反向代理", "微服务", "云原生", "高并发"],
+    stack: "Go + net/http + Prometheus",
+    desc: "统一收口鉴权、限流、熔断、日志与指标的 HTTP 网关，支持配置热加载。",
+    bullets: [
+      "<b>限流</b>：按客户端 IP 维护独立令牌桶，后台清理不活跃条目，超限返回 429 并附带 Retry-After",
+      "<b>熔断</b>：按路由独立的三态熔断器，打开后直接拒绝、到期半开只放一个探测请求，避免恢复瞬间被打垮",
+      "<b>安全</b>：JWT 仅接受 HMAC 系列算法，显式拒绝 alg=none 的降级攻击，校验后透传用户标识",
+      "<b>可观测与稳定性</b>：暴露 QPS、耗时直方图与熔断状态指标；配置解析失败保留旧配置，支持优雅关闭"
+    ]
+  },
+  {
+    id: "gesture-music",
+    url: "https://github.com/Cixuy/gesture-music",
+    name: "手势音乐盒",
+    role: "独立开发",
+    period: "2026/11",
+    direction: ["frontend", "backend"],
+    tags: ["web", "canvas", "websocket", "redis", "实时", "音频", "前端", "spring boot"],
+    stack: "MediaPipe + Web Audio + Canvas + Spring Boot + Redis",
+    desc: "浏览器内手部识别驱动发声的互动应用，支持多人同房间合奏。",
+    bullets: [
+      "<b>浏览器内推理</b>：MediaPipe 手部关键点检测跑在本地 WASM，不依赖云端；检测与渲染解耦，30fps 检测驱动 60fps 画面",
+      "<b>实时合成</b>：Web Audio 振荡器叠加 ADSR 包络发声，音高量化到五声音阶，任意手势都不会产生刺耳音程",
+      "<b>房间广播</b>：WebSocket 只同步音符事件而非坐标，服务端经 Redis Pub/Sub 扇出，多实例部署下仍能互相听到",
+      "<b>记录与榜单</b>：演奏明细入 MySQL，周榜用 Redis ZSET 维护，在线人数用 Set 跨实例共享"
+    ]
+  },
+  {
+    id: "api-testkit",
+    url: "https://github.com/Cixuy/api-testkit",
+    name: "接口自动化测试框架",
+    role: "独立开发",
+    period: "2026/11",
+    direction: ["test", "backend"],
+    tags: ["python", "测试", "自动化", "接口测试", "pytest", "ci", "持续集成",
+           "yaml", "框架", "质量保障", "断言"],
+    stack: "Python + requests + PyYAML",
+    desc: "数据驱动的接口自动化框架：YAML 描述用例，自带执行引擎、断言体系与报告生成。",
+    bullets: [
+      "<b>用例 DSL</b>：YAML 定义多步骤请求，支持变量插值与跨步骤提取，用例与代码解耦，非开发人员也能改",
+      "<b>断言体系</b>：覆盖状态码、JSONPath、数值区间、正则、JSON Schema 与响应耗时共 8 类断言",
+      "<b>执行与报告</b>：支持并行执行、仅 5xx 重试、按标签过滤；输出 HTML 报告与 JUnit XML 供 CI 解析",
+      "<b>工程化</b>：冒烟与集成用例分组，冒烟不依赖外部服务，集成用例单独验证跨语言链路"
+    ]
+  }
+];
+
+
+/* ------------------------------------------------------------------
+   岗位预设：一键切换项目组合、求职意向与技能排序
+------------------------------------------------------------------ */
+const ROLE_PRESETS = [
+  {
+    id: "java-backend", label: "Java 后端", intent: "Java 后端开发工程师",
+    projects: ["code-review-agent", "serverops", "smart-site"],
+    skills: [
+      "<b>语言与基础</b>：Java（集合、并发、JVM 内存模型）、SQL；掌握常用设计模式",
+      "<b>框架与中间件</b>：Spring Boot、Spring Security、MyBatis；MySQL 索引与事务、Redis 缓存与分布式锁",
+      "<b>工程能力</b>：接口设计、权限模型、状态机建模、缓存治理；Git、Maven、Linux、Docker",
+      "<b>AI 应用</b>：RAG 链路、Agent 工具编排、MCP 协议"
+    ]
+  },
+  {
+    id: "ai-agent", label: "AI Agent", intent: "AI Agent 应用开发工程师",
+    projects: ["code-review-agent", "serverops", "cpp-code-insight"],
+    skills: [
+      "<b>Agent 开发</b>：MCP 协议工具暴露、多 Agent 编排（Planner-Executor-Supervisor）、工具调用与降级策略",
+      "<b>检索增强</b>：文档切片、Embedding 与向量库、Top-K 召回、上下文预算裁剪",
+      "<b>语言与框架</b>：Java、Spring Boot、Spring AI；Python 基础",
+      "<b>工程</b>：流式输出（SSE）、提示词与上下文管理、Git、Linux"
+    ]
+  },
+  {
+    id: "cpp-systems", label: "C++ 工程师", intent: "C++ 后端 / 系统开发工程师",
+    projects: ["cpp-code-insight", "code-review-agent", "go-gateway"],
+    skills: [
+      "<b>语言</b>：C++17（RAII、STL、移动语义）、Java、Go；熟悉 Linux 开发环境",
+      "<b>系统编程</b>：epoll/Reactor、非阻塞 IO、TCP 协议栈、手写 HTTP 报文解析",
+      "<b>性能</b>：单连接压测 8070 QPS、p99 0.17ms；会用压测定位瓶颈",
+      "<b>工程</b>：CMake、GDB、Git；跨语言服务对接"
+    ]
+  },
+  {
+    id: "server-ops", label: "服务器工程师", intent: "服务器开发 / 运维开发工程师",
+    projects: ["serverops", "go-gateway", "cpp-code-insight"],
+    skills: [
+      "<b>可观测性</b>：指标采集与存储（InfluxDB 时序、Prometheus 指标）、告警闭环、日志分表",
+      "<b>服务治理</b>：限流（令牌桶）、熔断（三态机）、反向代理与灰度分流",
+      "<b>语言与框架</b>：Java、Spring Boot、Go；MySQL、Redis、Linux",
+      "<b>工程</b>：WebSocket 长连接管理、优雅关闭、配置热加载"
+    ]
+  },
+  {
+    id: "test-dev", label: "测试开发", intent: "测试开发工程师",
+    projects: ["api-testkit", "code-review-agent", "serverops"],
+    skills: [
+      "<b>测试框架</b>：接口自动化框架设计（用例 DSL、断言体系、报告生成）、数据驱动、并行执行",
+      "<b>质量工程</b>：用例分层（冒烟/集成）、失败定位与重试策略、CI 集成（JUnit XML）",
+      "<b>语言</b>：Python（requests、pytest 生态）、Java、SQL",
+      "<b>业务理解</b>：接口契约、幂等与边界场景设计"
+    ]
+  },
+  {
+    id: "go-cloud", label: "Go 云原生", intent: "Go 服务端开发工程师",
+    projects: ["go-gateway", "gesture-music", "cpp-code-insight"],
+    skills: [
+      "<b>语言</b>：Go（并发模型、channel、context）、Java、C++ 基础",
+      "<b>服务治理</b>：网关路由、限流熔断、JWT 鉴权、配置热加载、优雅关闭",
+      "<b>中间件</b>：Redis（Pub/Sub、ZSET、Set）、MySQL、WebSocket 长连接",
+      "<b>可观测</b>：Prometheus 指标（QPS、耗时直方图）、结构化日志"
+    ]
+  }
+];
+
+/* 岗位方向词表：用于把 JD 归到某个方向，影响排序权重 */
+const DIRECTIONS = {
+  ai: ["ai", "agent", "大模型", "llm", "rag", "向量", "智能体", "mcp", "prompt", "推理"],
+  backend: ["java", "spring", "后端", "服务端", "微服务", "mysql", "redis", "高并发", "中间件"],
+  go: ["go", "golang", "云原生", "kubernetes", "k8s", "docker"],
+  cpp: ["c++", "cpp", "linux", "底层", "网络编程", "内核", "嵌入式", "驱动"],
+  test: ["测试", "自动化", "质量", "qa", "sdet", "用例", "接口测试"],
+  frontend: ["vue", "react", "前端", "javascript", "typescript"]
+};
+
+/* ------------------------------------------------------------------
+   匹配：JD 文本 → 关键词集合 → 项目打分
+------------------------------------------------------------------ */
+function analyzeJD(text) {
+  const lower = (text || "").toLowerCase();
+  const hits = [];
+  for (const [dir, words] of Object.entries(DIRECTIONS)) {
+    for (const w of words) {
+      if (lower.includes(w)) hits.push({ dir, word: w });
+    }
+  }
+  // 方向权重：出现次数越多，该方向越重要
+  const dirScore = {};
+  for (const h of hits) dirScore[h.dir] = (dirScore[h.dir] || 0) + 1;
+  return { hits, dirScore };
+}
+
+function scoreProject(proj, analysis) {
+  const lower = analysis.text;
+  let hitCount = 0;
+  const matched = [];
+  for (const tag of proj.tags) {
+    if (lower.includes(tag)) { hitCount++; matched.push(tag); }
+  }
+  // 方向契合度
+  let dirBonus = 0;
+  for (const d of proj.direction) {
+    if (analysis.dirScore[d]) dirBonus += analysis.dirScore[d] * 2;
+  }
+  const score = hitCount * 3 + dirBonus;
+  return { score, hitCount, matched, dirBonus };
+}
+
+/* ------------------------------------------------------------------
+   状态
+------------------------------------------------------------------ */
+const state = {
+  roleId: "java-backend",
+  skills: [],
+  selected: [],
+  analysis: { text: "", hits: [], dirScore: {} }
+};
+
+/* ------------------------------------------------------------------
+   渲染：项目推荐列表
+------------------------------------------------------------------ */
+function renderProjects() {
+  const list = document.getElementById("projList");
+  list.innerHTML = "";
+  const ranked = PROJECTS.map(p => {
+    const s = scoreProject(p, state.analysis);
+    return { p, ...s };
+  }).sort((a, b) => b.score - a.score);
+
+  for (const item of ranked) {
+    const on = state.selected.includes(item.p.id);
+    const div = document.createElement("div");
+    div.className = "proj" + (on ? " on" : "");
+    const why = item.matched.length
+      ? "命中：" + item.matched.slice(0, 6).join("、")
+      : "与 JD 关键词重合较少";
+    div.innerHTML = `
+      <div class="proj-head">
+        <span class="proj-name">${on ? "✓ " : ""}${item.p.name}</span>
+        <span class="score"><b>${item.score}</b> 分</span>
+      </div>
+      <div class="proj-meta">${item.p.stack} · ${item.p.direction.join(" / ")}</div>
+      <div class="proj-why">${why}</div>`;
+    div.onclick = () => toggle(item.p.id);
+    list.appendChild(div);
+  }
+  document.getElementById("pickCount").textContent = `已选 ${state.selected.length} 个`;
+}
+
+function applyRole(roleId) {
+  const role = ROLE_PRESETS.find(r => r.id === roleId);
+  if (!role) return;
+  state.roleId = roleId;
+  state.selected = role.projects.filter(id => PROJECTS.some(p => p.id === id));
+  state.skills = role.skills;
+  document.getElementById("fIntent").value = role.intent;
+  renderRoles();
+  renderProjects();
+  renderPaper();
+}
+
+function renderRoles() {
+  const box = document.getElementById("roleList");
+  box.innerHTML = "";
+  for (const r of ROLE_PRESETS) {
+    const d = document.createElement("div");
+    d.className = "role" + (r.id === state.roleId ? " on" : "");
+    d.textContent = r.label;
+    d.onclick = () => applyRole(r.id);
+    box.appendChild(d);
+  }
+}
+
+function toggle(id) {
+  const i = state.selected.indexOf(id);
+  if (i >= 0) state.selected.splice(i, 1);
+  else {
+    if (state.selected.length >= 3) state.selected.shift();
+    state.selected.push(id);
+  }
+  renderProjects();
+  renderPaper();
+}
+
+/* ------------------------------------------------------------------
+   渲染：简历预览
+------------------------------------------------------------------ */
+function readForm() {
+  return {
+    name: document.getElementById("fName").value.trim(),
+    birth: document.getElementById("fBirth").value.trim(),
+    phone: document.getElementById("fPhone").value.trim(),
+    mail: document.getElementById("fMail").value.trim(),
+    home: document.getElementById("fHome").value.trim(),
+    intent: document.getElementById("fIntent").value.trim()
+  };
+}
+
+function renderPaper() {
+  const f = readForm();
+  const paper = document.getElementById("paper");
+  const picked = state.selected.length
+    ? state.selected.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean)
+    : PROJECTS.slice(0, 2);
+
+  const projectsHtml = picked.map(p => `
+    <div class="proj-item">
+      <div class="proj-title">
+        <span>${p.name}<span class="role">　${p.role}</span></span>
+        <span>${p.period}</span>
+      </div>
+      <div class="proj-desc">${p.desc}</div>
+      <div class="proj-url">项目地址：<a href="${p.url}" target="_blank">${p.url.replace("https://", "")}</a></div>
+      <ul>${p.bullets.map(b => `<li>${b}</li>`).join("")}</ul>
+    </div>`).join("");
+
+  paper.innerHTML = `
+    <h1>${f.name}</h1>
+    <div class="contact">
+      <span>出生年月：${f.birth}</span>
+      <span>${f.phone}</span>
+      <span>${f.mail}</span>
+      <span>个人主页：<a href="https://${f.home}" target="_blank">${f.home}</a></span>
+    </div>
+    <div class="intent"><b>求职意向：</b>${f.intent}</div>
+
+    <div class="sec">
+      <div class="sec-title">教育经历</div>
+      <div class="edu-line">
+        <span><b>${PROFILE.edu.school}</b>　${PROFILE.edu.major} · ${PROFILE.edu.degree}</span>
+        <span>${PROFILE.edu.period}</span>
+      </div>
+      <div class="muted">主修课程：${PROFILE.edu.courses}</div>
+      <div class="muted">${PROFILE.extra}</div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">项目经历</div>
+      ${projectsHtml}
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">专业技能</div>
+      <ul>${(state.skills || []).map(x => `<li>${x}</li>`).join("")}</ul>
+    </div>
+  `;
+}
+
+/* ------------------------------------------------------------------
+   导出 Word：用带 Word 命名空间的 HTML，Word 可直接打开并编辑
+------------------------------------------------------------------ */
+function exportWord() {
+  const body = document.getElementById("paper").innerHTML;
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+  <head><meta charset="utf-8">
+  <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View>
+  <w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+  <style>
+    @page { size: A4; margin: 1.4cm 1.6cm; }
+    body { font-family: "Microsoft YaHei"; font-size: 10.5pt; line-height: 1.5; color: #1a1a1a; }
+    h1 { font-size: 22pt; margin: 0 0 4pt; letter-spacing: 2pt; }
+    .contact { font-size: 9pt; color: #444; }
+    .contact span { margin-right: 12pt; }
+    .intent { font-size: 10pt; margin-top: 4pt; }
+    .sec { margin-top: 10pt; }
+    .sec-title { font-size: 11.5pt; font-weight: bold; border-bottom: 1px solid #333;
+                 padding-bottom: 2pt; margin-bottom: 4pt; }
+    .edu-line, .proj-title { display: block; }
+    .proj-title { font-weight: bold; margin-top: 6pt; }
+    .proj-item { margin-bottom: 6pt; }
+    .proj-desc { font-size: 9.5pt; color: #333; }
+    .proj-url { font-size: 9pt; color: #555; }
+    a { color: #1a4fb4; text-decoration: none; }
+    ul { margin: 2pt 0 0 0; padding-left: 14pt; }
+    li { font-size: 9.8pt; margin-bottom: 2pt; }
+    .muted { color: #444; }
+  </style></head><body>${body}</body></html>`;
+
+  const blob = new Blob(["\ufeff", html], { type: "application/msword" });
+  download(blob, `简历-${readForm().intent || "通用"}.doc`);
+}
+
+function download(blob, filename) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+/* ------------------------------------------------------------------
+   事件绑定
+------------------------------------------------------------------ */
+const jdEl = document.getElementById("jd");
+jdEl.addEventListener("input", () => {
+  const text = jdEl.value.toLowerCase();
+  state.analysis = { text, ...analyzeJD(jdEl.value) };
+  renderJdChips();
+  autoPickIfEmpty();
+  renderProjects();
+  renderPaper();
+});
+
+function renderJdChips() {
+  const box = document.getElementById("jdChips");
+  const seen = new Set();
+  box.innerHTML = "";
+  // 只展示方向，避免几十个关键词堆在一起
+  for (const [dir, n] of Object.entries(state.analysis.dirScore)) {
+    if (n <= 0 || seen.has(dir)) continue;
+    seen.add(dir);
+    const label = { ai: "AI/Agent", backend: "后端", go: "Go/云原生",
+                    cpp: "C++/底层", test: "测试", frontend: "前端" }[dir] || dir;
+    const span = document.createElement("span");
+    span.className = "chip hit";
+    span.textContent = `${label} ×${n}`;
+    box.appendChild(span);
+  }
+  if (!box.children.length) {
+    const span = document.createElement("span");
+    span.className = "chip";
+    span.textContent = "尚未识别到方向关键词";
+    box.appendChild(span);
+  }
+}
+
+// JD 变化后若还没选项目，自动勾选分数最高的两个
+function autoPickIfEmpty() {
+  if (state.selected.length) return;
+  const ranked = PROJECTS.map(p => ({ p, ...scoreProject(p, state.analysis) }))
+                         .sort((a, b) => b.score - a.score)
+                         .slice(0, 2)
+                         .map(x => x.p.id);
+  state.selected = ranked;
+}
+
+document.getElementById("btnSample").onclick = () => {
+  jdEl.value = `岗位职责：
+1. 负责后端服务的设计与开发，使用 Java、Spring Boot、MyBatis；
+2. 熟悉 MySQL、Redis，有高并发场景优化经验优先；
+3. 参与 AI Agent 相关能力建设，了解 RAG、向量检索、MCP 协议；
+4. 具备良好的工程能力，熟悉 Git、Linux、Docker。
+任职要求：
+1. 计算机相关专业本科及以上；
+2. 有中间件、网关、性能优化经验者优先。`;
+  jdEl.dispatchEvent(new Event("input"));
+};
+
+document.getElementById("btnWord").onclick = exportWord;
+document.getElementById("btnPdf").onclick = () => {
+  document.getElementById("statusText").textContent = "在弹出的打印窗口里选择「另存为 PDF」";
+  window.print();
+};
+
+["fName", "fBirth", "fPhone", "fMail", "fHome", "fIntent"].forEach(id => {
+  document.getElementById(id).addEventListener("input", renderPaper);
+});
+
+/* 若同目录存在 profile.js，用它填满表单（个人数据不进仓库） */
+function applyProfile() {
+  const p = window.PROFILE_OVERRIDE;
+  if (!p) return;
+  const map = { fName: p.name, fBirth: p.birth, fPhone: p.phone,
+                fMail: p.mail, fHome: p.home, fIntent: p.intent };
+  for (const [id, v] of Object.entries(map)) {
+    if (v) document.getElementById(id).value = v;
+  }
+  if (p.edu) Object.assign(PROFILE.edu, p.edu);
+  if (p.extra) PROFILE.extra = p.extra;
+}
+
+/* 初始化 */
+applyProfile();
+applyRole(state.roleId);
+renderRoles();
+</script>
+</body>
+</html>
