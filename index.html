@@ -252,6 +252,13 @@
          display: flex; gap: 6px; align-items: baseline; }
   .e-q .tagm { font-size: 10.5px; color: var(--accent); background: var(--accent-soft);
                border-radius: 3px; padding: 0 5px; cursor: pointer; }
+
+  /* AI 配置：全局入口 + 弹窗 */
+  .ai-cfg { display: inline-flex; align-items: center; gap: 6px; }
+  .ai-dot { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; display: inline-block; }
+  .ai-dot.on { background: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.15); }
+  .sheet.narrow { max-width: 560px; }
+  .sheet-body.solo { display: block; }
   .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
   .warn { color: #b45309; }
 
@@ -340,9 +347,11 @@
     <button data-view="mj">面经</button>
     <button data-view="rv">复盘</button>
   </div>
+  <button class="mini ai-cfg" id="btnAiCfg" title="AI 接口配置，全站通用">
+    <span class="ai-dot" id="aiDot"></span>AI 设置
+  </button>
   <div class="actions">
     <button id="btnSample" class="mini">示例 JD</button>
-    <button id="btnAi" class="mini">AI 分析</button>
     <button id="btnIv" class="btn-iv" title="按当前 JD 和简历打分，并给出面试题">
       <span class="iv-ico">◈</span>面试评估<span class="iv-badge" id="ivBadge">--</span>
     </button>
@@ -526,6 +535,58 @@
     </div>
   </section>
 
+<div class="overlay" id="aiOverlay">
+  <div class="sheet narrow">
+    <div class="sheet-head">
+      <h2>AI 接口配置</h2>
+      <span class="score-badge" id="aiStateModal">未配置</span>
+      <span class="grow"></span>
+      <button class="mini" id="aiClose">关闭</button>
+    </div>
+    <div class="sheet-body solo">
+      <div style="padding:16px 20px 20px">
+        <div class="hint">
+          配置一个 OpenAI 兼容接口，全站三个页面通用：项目 AI 打分、面试题补充、面经 AI 提炼。
+          不配置也能用，走本地关键词和内置题库。
+        </div>
+        <label>快捷填充</label>
+        <div class="chips" id="aiProviders">
+          <button class="chip" data-base="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
+          <button class="chip" data-base="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-plus">通义千问</button>
+          <button class="chip" data-base="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">智谱</button>
+          <button class="chip" data-base="https://api.moonshot.cn/v1" data-model="moonshot-v1-8k">Kimi</button>
+          <button class="chip" data-base="https://api.siliconflow.cn/v1" data-model="Qwen/Qwen2.5-7B-Instruct">硅基流动</button>
+          <button class="chip" data-base="https://api.openai.com/v1" data-model="gpt-4o-mini">OpenAI</button>
+        </div>
+        <label>接口地址</label>
+        <input type="text" id="aiBase" placeholder="https://api.deepseek.com/v1">
+        <div class="row2">
+          <div><label>模型</label>
+            <input type="text" id="aiModel" placeholder="deepseek-chat" list="aiModelList">
+            <datalist id="aiModelList"></datalist>
+          </div>
+          <div><label>密钥</label><input type="password" id="aiKey" placeholder="sk-..."></div>
+        </div>
+        <div id="aiModelBox" style="display:none">
+          <label>可用模型 <em style="font-style:normal;color:var(--muted)">点一下即填入</em></label>
+          <div class="chips" id="aiModelPick"></div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap">
+          <button class="mini" id="btnAiProbe">拉取可用模型</button>
+          <button class="mini" id="btnAiRun2">用 AI 重新打分</button>
+          <button class="mini" id="btnAiClear">清除配置</button>
+        </div>
+        <div class="hint" id="aiMsg" style="margin-top:10px"></div>
+        <div class="hint warn" style="margin-top:10px">
+          密钥只存在这台浏览器的 localStorage，不随页面或仓库上传。
+          HTTP 400 多为模型名或地址不对，点「拉取可用模型」可核对；
+          若接口不允许跨域，浏览器会直接拦截，此时仍可用本地题库。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="ivOverlay">
   <div class="sheet">
     <div class="sheet-head">
@@ -610,44 +671,16 @@
     </div>
 
     <div class="panel">
-      <h2>AI 分析 <em id="aiState">未配置</em></h2>
+      <h2>AI 能力 <em id="aiState">未配置</em></h2>
       <div class="hint">
-        配置一个 OpenAI 兼容接口，可以让模型判断哪个项目更贴合 JD。
-        不配置也能用，走关键词打分。
-      </div>
-      <label>快捷填充</label>
-      <div class="chips" id="aiProviders">
-        <button class="chip" data-base="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
-        <button class="chip" data-base="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-plus">通义千问</button>
-        <button class="chip" data-base="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">智谱</button>
-        <button class="chip" data-base="https://api.moonshot.cn/v1" data-model="moonshot-v1-8k">Kimi</button>
-        <button class="chip" data-base="https://api.siliconflow.cn/v1" data-model="Qwen/Qwen2.5-7B-Instruct">硅基流动</button>
-        <button class="chip" data-base="https://api.openai.com/v1" data-model="gpt-4o-mini">OpenAI</button>
-      </div>
-      <label>接口地址</label>
-      <input type="text" id="aiBase" placeholder="https://api.deepseek.com/v1">
-      <div class="row2">
-        <div><label>模型</label>
-          <input type="text" id="aiModel" placeholder="deepseek-chat" list="aiModelList">
-          <datalist id="aiModelList"></datalist>
-        </div>
-        <div><label>密钥</label><input type="password" id="aiKey" placeholder="sk-..."></div>
-      </div>
-      <div id="aiModelBox" style="display:none">
-        <label>可用模型 <em style="font-style:normal;color:var(--muted)">点一下即填入</em></label>
-        <div class="chips" id="aiModelPick"></div>
+        配置一次，全站通用：项目 AI 打分、面试题补充、面经 AI 提炼都用它。
+        不配也能用，走本地关键词和内置题库。
       </div>
       <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap">
+        <button class="mini" id="btnAiCfg2">配置 / 修改</button>
         <button class="mini" id="btnAiRun">用 AI 重新打分</button>
-        <button class="mini" id="btnAiProbe">拉取可用模型</button>
-        <button class="mini" id="btnAiClear">清除配置</button>
       </div>
-      <div class="hint" id="aiMsg" style="margin-top:8px"></div>
-      <div class="hint warn" style="margin-top:8px">
-        密钥只存在这台浏览器的 localStorage，不随页面或仓库上传。
-        HTTP 400 多为模型名或地址不对，点“拉取可用模型”可核对；
-        若接口不允许跨域，浏览器会直接拦截，此时仍可用关键词打分。
-      </div>
+      <div class="hint" id="aiStatus" style="margin-top:8px"></div>
     </div>
   </div>
 
@@ -1559,10 +1592,36 @@ function aiReady() {
 }
 
 function updateAiState() {
-  document.getElementById("aiState").textContent = aiReady() ? "已配置" : "未配置";
+  const ready = aiReady();
+  document.getElementById("aiState").textContent = ready ? "已配置" : "未配置";
+  document.getElementById("aiStateModal").textContent = ready ? "已配置" : "未配置";
+  const dot = document.getElementById("aiDot");
+  if (dot) dot.classList.toggle("on", ready);
+  const st = document.getElementById("aiStatus");
+  if (st && !st.dataset.keep) {
+    st.textContent = ready
+      ? `已接入 ${state.ai.model}`
+      : "未配置。配置后可用 AI 打分、出面试题、提炼面经。";
+  }
   document.getElementById("aiBase").value = state.ai.base || "";
   document.getElementById("aiModel").value = state.ai.model || "";
   document.getElementById("aiKey").value = state.ai.key || "";
+}
+
+/* 结果同时显示在弹窗和左栏卡片上，避免关掉弹窗就看不到提示 */
+function aiSay(text, keep) {
+  const m = document.getElementById("aiMsg");
+  if (m) m.textContent = text;
+  const st = document.getElementById("aiStatus");
+  if (st) {
+    st.textContent = text;
+    st.dataset.keep = keep ? "1" : "";
+  }
+}
+
+function openAiCfg() {
+  updateAiState();
+  document.getElementById("aiOverlay").classList.add("on");
 }
 
 /* 地址归一：用户可能填 .../v1、.../v1/、整个 .../chat/completions，也可能漏了 /v1。
@@ -1675,11 +1734,10 @@ async function aiAsk(messages, parse) {
 }
 
 async function runAi() {
-  const msg = document.getElementById("aiMsg");
-  if (!state.jd || state.jd.trim().length < 30) { msg.textContent = "先在左边粘一段 JD。"; return; }
-  if (!aiReady()) { msg.textContent = "请先填写接口地址、模型和密钥。"; return; }
+  if (!state.jd || state.jd.trim().length < 30) { aiSay("先在左边粘一段 JD。"); return; }
+  if (!aiReady()) { aiSay("请先填写接口地址、模型和密钥。"); openAiCfg(); return; }
 
-  msg.textContent = "分析中…";
+  aiSay("分析中…");
   const list = PROJECTS.map(p => ({ id: p.id, name: p.name, stack: p.stack, desc: p.desc, distinct: p.distinct }));
 
   const sys = "你是技术招聘顾问。评估候选人项目与岗位 JD 的匹配度。"
@@ -1695,7 +1753,7 @@ async function runAi() {
   if (r.ok) {
     state.aiScores = r.map;
     renderProjects();
-    msg.textContent = "已按 AI 结果重排，点选项目即可加入。";
+    aiSay("已按 AI 结果重排，点选项目即可加入。");
   } else {
     state.aiScores = null;
     renderProjects();
@@ -1731,7 +1789,7 @@ function renderModelPick(ids) {
       input.value = b.dataset.model;
       input.dispatchEvent(new Event("change", { bubbles: true }));
       sync();
-      document.getElementById("aiMsg").textContent = "已选模型 " + b.dataset.model + "，可以点「用 AI 重新打分」。";
+      aiSay("已选模型 " + b.dataset.model + "，可以点「用 AI 重新打分」。");
     };
   });
 
@@ -1741,11 +1799,10 @@ function renderModelPick(ids) {
 
 /* 拉 /models 列出可用模型，直接解决“模型名写错”这类 400 */
 async function probeAiModels() {
-  const msg = document.getElementById("aiMsg");
-  if (!state.ai.base) { msg.textContent = "先填接口地址。"; return; }
-  if (!state.ai.key) { msg.textContent = "先填密钥。"; return; }
+  if (!state.ai.base) { aiSay("先填接口地址。"); return; }
+  if (!state.ai.key) { aiSay("先填密钥。"); return; }
 
-  msg.textContent = "拉取模型列表中…";
+  aiSay("拉取模型列表中…");
   let lastErr = "接口未提供 /models";
 
   for (const url of aiModelPaths(state.ai.base)) {
@@ -1753,8 +1810,8 @@ async function probeAiModels() {
     try {
       resp = await fetch(url, { headers: { "Authorization": "Bearer " + state.ai.key } });
     } catch (e) {
-      msg.textContent = "拉取失败：请求没能发出（" + (e.message || "网络错误")
-        + "）。该接口可能不允许浏览器直连，直接手填模型名即可。";
+      aiSay("拉取失败：请求没能发出（" + (e.message || "网络错误")
+        + "）。该接口可能不允许浏览器直连，直接手填模型名即可。");
       return;
     }
     if (!resp.ok) {
@@ -1770,10 +1827,10 @@ async function probeAiModels() {
     if (!ids.length) { lastErr = "返回里没有模型列表"; continue; }
 
     renderModelPick(ids);
-    msg.textContent = "找到 " + ids.length + " 个模型，点下面任意一个标签即可填入模型框。";
+    aiSay("找到 " + ids.length + " 个模型，点下面任意一个标签即可填入模型框。");
     return;
   }
-  msg.textContent = "拉取失败：" + lastErr + "。可以手填模型名。";
+  aiSay("拉取失败：" + lastErr + "。可以手填模型名。");
 }
 
 /* ------------------------------------------------------------------
@@ -1910,10 +1967,10 @@ document.getElementById("btnSample").onclick = () => {
   jdEl.dispatchEvent(new Event("input"));
 };
 
-document.getElementById("btnAi").onclick = () => {
-  document.getElementById("aiMsg").scrollIntoView({ behavior: "smooth", block: "center" });
-  runAi();
-};
+document.getElementById("btnAiCfg").onclick = openAiCfg;
+document.getElementById("btnAiCfg2").onclick = openAiCfg;
+document.getElementById("btnAiRun2").onclick = runAi;
+document.getElementById("aiClose").onclick = () => document.getElementById("aiOverlay").classList.remove("on");
 document.getElementById("btnAiRun").onclick = runAi;
 document.getElementById("btnAiProbe").onclick = probeAiModels;
 
@@ -1928,8 +1985,7 @@ document.getElementById("aiProviders").addEventListener("click", (e) => {
   };
   LS.set("resume.ai", state.ai);
   updateAiState();
-  document.getElementById("aiMsg").textContent =
-    "已填入 " + btn.textContent.trim() + " 的地址与默认模型，补上密钥即可。";
+  aiSay("已填入 " + btn.textContent.trim() + " 的地址与默认模型，补上密钥即可。");
 });
 document.getElementById("btnAiClear").onclick = () => {
   state.ai = { base: "", model: "", key: "" };
@@ -1937,7 +1993,7 @@ document.getElementById("btnAiClear").onclick = () => {
   updateAiState();
   document.getElementById("aiModelPick").innerHTML = "";
   document.getElementById("aiModelBox").style.display = "none";
-  document.getElementById("aiMsg").textContent = "已清除本地配置。";
+  aiSay("已清除本地配置。");
 };
 
 ["aiBase", "aiModel", "aiKey"].forEach(id => {
@@ -2450,8 +2506,15 @@ document.getElementById("ivClose").onclick = () => {
   document.getElementById("ivOverlay").classList.remove("on");
 };
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") document.getElementById("ivOverlay").classList.remove("on");
+  if (e.key !== "Escape") return;
+  document.getElementById("ivOverlay").classList.remove("on");
+  const ai = document.getElementById("aiOverlay");
+  if (ai) ai.classList.remove("on");
 });
+document.getElementById("aiOverlay").addEventListener("click", (e) => {
+  if (e.target.id === "aiOverlay") e.currentTarget.classList.remove("on");
+});
+
 document.getElementById("ivOverlay").addEventListener("click", (e) => {
   if (e.target.id === "ivOverlay") e.currentTarget.classList.remove("on");
 
