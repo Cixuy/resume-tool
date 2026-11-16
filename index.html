@@ -366,6 +366,9 @@
   .qa-a[contenteditable]:focus { outline: none; border-left-color: var(--accent); background: #f8fbff; }
   .qa-tag { font-size: 11px; color: #1d4ed8; background: #eef2ff; border-radius: 4px; padding: 1px 6px; }
   .qa-tools { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 11.5px; color: var(--faint); }
+  .qa-ref { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+  .qa-ref a { color: var(--accent); text-decoration: none; margin-right: 4px; }
+  .qa-ref a:hover { text-decoration: underline; }
   .qa-tools a { color: var(--muted); }
   .iv-empty { font-size: 12.5px; color: var(--muted); padding: 20px 0; }
   @media (max-width: 1024px) {
@@ -2313,6 +2316,34 @@ const IV_BANK = {
   ]
 };
 
+/* 延伸阅读：题库里每个技术点配一两篇公认写得好的资料 */
+const REF_LINKS = {
+  "java":      [["小林coding · Java 基础", "https://xiaolincoding.com/interview/"]],
+  "spring":    [["JavaGuide · Spring", "https://javaguide.cn/system-design/framework/spring/spring-knowledge-and-questions-summary.html"]],
+  "mybatis":   [["JavaGuide · MyBatis", "https://javaguide.cn/system-design/framework/mybatis/mybatis-interview.html"]],
+  "mysql":     [["小林coding · MySQL 索引与事务", "https://xiaolincoding.com/mysql/"],
+                ["JavaGuide · MySQL", "https://javaguide.cn/database/mysql/"]],
+  "redis":     [["小林coding · Redis 缓存与持久化", "https://xiaolincoding.com/redis/"],
+                ["JavaGuide · Redis", "https://javaguide.cn/database/redis/"]],
+  "websocket": [["小林coding · 网络协议", "https://xiaolincoding.com/network/"]],
+  "jwt":       [["JavaGuide · 认证与会话", "https://javaguide.cn/system-design/security/"]],
+  "mcp":       [["MCP 官方文档", "https://modelcontextprotocol.io/"]],
+  "rag":       [["LangChain · RAG 教程", "https://python.langchain.com/docs/tutorials/rag/"]],
+  "milvus":    [["Milvus 官方文档", "https://milvus.io/docs"]],
+  "influxdb":  [["InfluxDB · Flux 文档", "https://docs.influxdata.com/flux/"]],
+  "prometheus":[["Prometheus 官方文档", "https://prometheus.io/docs/introduction/overview/"]],
+  "限流":      [["小林coding · 限流算法", "https://xiaolincoding.com/interview/"]],
+  "熔断":      [["Martin Fowler · CircuitBreaker", "https://martinfowler.com/bliki/CircuitBreaker.html"]],
+  "epoll":     [["小林coding · IO 多路复用", "https://xiaolincoding.com/os/8_network_system/selete_poll_epoll.html"]],
+  "reactor":   [["小林coding · Reactor 模式", "https://xiaolincoding.com/os/8_network_system/reactor.html"]],
+  "c++":       [["cppreference · 中文", "https://zh.cppreference.com/"]],
+  "linux":     [["小林coding · 操作系统", "https://xiaolincoding.com/os/"]],
+  "python":    [["pytest 官方文档", "https://docs.pytest.org/"]],
+  "go":        [["Go 官方 · 并发与调度", "https://go.dev/doc/effective_go"]],
+  "canvas":    [["MDN · Canvas API", "https://developer.mozilla.org/zh-CN/docs/Web/API/Canvas_API"]],
+  "audio":     [["MDN · Web Audio API", "https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Audio_API"]]
+};
+
 function stripHtml(s) { return String(s == null ? "" : s).replace(/<[^>]+>/g, "").trim(); }
 
 /* ---------- 评估 ---------- */
@@ -2602,6 +2633,7 @@ function renderInterview() {
       <div class="qa-a" contenteditable="true" data-qid="${q.id}">${ans}</div>
       <div class="qa-tools">答案可以直接改，改完自动保存 ·
         <a href="#" data-reset="${q.id}">恢复默认</a></div>
+      ${refRow(q.tag)}
     </div>`;
   }).join("");
 
@@ -2612,6 +2644,14 @@ function renderInterview() {
 function openInterview() {
   document.getElementById("ivOverlay").classList.add("on");
   renderInterview();
+}
+
+/* 题目底部的延伸阅读：按标签查表，没有就不显示 */
+function refRow(tag) {
+  const list = REF_LINKS[String(tag || "").toLowerCase()];
+  if (!list || !list.length) return "";
+  return `<div class="qa-ref">延伸阅读：` + list.map(([name, url]) =>
+    `<a href="${url}" target="_blank" rel="noopener">${name}</a>`).join("　") + `</div>`;
 }
 
 /* 从面经里点某个技术标签，直接跳到题库里这个技术点 */
