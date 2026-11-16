@@ -131,11 +131,14 @@
     font-size: 11.5pt; font-weight: 700; letter-spacing: 1px;
     border-bottom: 1px solid #333; padding-bottom: 2px; margin-bottom: 6px;
   }
-  .edu-line { display: flex; justify-content: space-between; }
+  .edu-line, .proj-title { overflow: hidden; }
+  .edu-line .date, .proj-title .date {
+    float: right; font-weight: 400; font-size: 10pt; color: #333;
+  }
   .muted { color: #444; }
   .proj-item { margin-bottom: 6px; }
-  .proj-title { display: flex; justify-content: space-between; font-weight: 700; font-size: 10.5pt; }
-  .proj-title .role { font-weight: 400; color: #444; font-size: 10pt; }
+  .proj-title { font-weight: 700; font-size: 10.5pt; margin-top: 2px; }
+  .proj-title .role { font-weight: 400; color: #555; font-size: 10pt; }
   .proj-desc { font-size: 9.5pt; color: #333; margin: 1px 0 2px; }
   .proj-url { font-size: 9pt; color: #555; }
   .paper a { color: #1a4fb4; text-decoration: none; }
@@ -729,8 +732,9 @@ function renderPaper() {
   const projectsHtml = picked.map(p => `
     <div class="proj-item">
       <div class="proj-title">
-        <span>${p.name}<span class="role">　${p.role}</span></span>
-        <span>${p.period}</span>
+        <span class="date">${p.period}</span>
+        <span class="name">${p.name}</span>
+        <span class="role">　${p.role}</span>
       </div>
       <div class="proj-desc">${p.desc}</div>
       <div class="proj-url">项目地址：<a href="${p.url}" target="_blank">${p.url.replace("https://", "")}</a></div>
@@ -760,8 +764,8 @@ function renderPaper() {
     <div class="sec">
       <div class="sec-title">教育经历</div>
       <div class="edu-line">
+        <span class="date">${PROFILE.edu.period}</span>
         <span><b>${PROFILE.edu.school}</b>　${PROFILE.edu.major} · ${PROFILE.edu.degree}</span>
-        <span>${PROFILE.edu.period}</span>
       </div>
       <div class="muted">主修课程：${PROFILE.edu.courses}</div>
       <div class="muted">${PROFILE.extra}</div>
@@ -809,8 +813,10 @@ function exportWord() {
     .sec { margin-top: 10pt; }
     .sec-title { font-size: 11.5pt; font-weight: bold; border-bottom: 1px solid #333;
                  padding-bottom: 2pt; margin-bottom: 4pt; }
-    .edu-line, .proj-title { display: block; }
-    .proj-title { font-weight: bold; margin-top: 6pt; }
+    .edu-line, .proj-title { overflow: hidden; }
+    .edu-line .date, .proj-title .date { float: right; font-weight: normal; font-size: 10pt; color: #333; }
+    .proj-title { font-weight: bold; margin-top: 5pt; }
+    .proj-title .role { font-weight: normal; color: #555; font-size: 10pt; }
     .proj-item { margin-bottom: 6pt; }
     .proj-desc { font-size: 9.5pt; color: #333; }
     .proj-url { font-size: 9pt; color: #555; }
