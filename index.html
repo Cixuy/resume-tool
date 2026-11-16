@@ -1838,6 +1838,52 @@ async function readAiError(resp) {
   return { code: s, detail, tip };
 }
 
+function aiTextOf(data) {
+  let text = (data && data.choices && data.choices[0] && data.choices[0].message
+    && data.choices[0].message.content) || "";
+  if (Array.isArray(text)) text = text.map(t => t.text || "").join("");
+  return String(text || "");
+}
+
+/* 模型经常不老实：套 ```json 围栏、尾逗号、输出被 max_tokens 截断、
+   把数组直接顶在顶层。这里逐级放宽，尽量把内容捞出来。 */
+function looseJson(text) {
+  let s = String(text || "").trim();
+  s = s.replace(/^```[a-zA-Z]*\s*/m, "").replace(/```\s*$/m, "").trim();
+
+  const tryParse = (t) => { try { return JSON.parse(t); } catch (_) { return null; } };
+
+  const cands = [];
+  const a1 = s.indexOf("{"), b1 = s.lastIndexOf("}");
+  if (a1 >= 0 && b1 > a1) cands.push(s.slice(a1, b1 + 1));
+  const a2 = s.indexOf("["), b2 = s.lastIndexOf("]");
+  if (a2 >= 0 && b2 > a2) cands.push(s.slice(a2, b2 + 1));
+  cands.push(s);
+
+  for (let c of cands) {
+    let v = tryParse(c);
+    if (v) return v;
+    // 尾逗号
+    v = tryParse(c.replace(/,\s*([}\]])/g, "$1"));
+    if (v) return v;
+    // 被截断：逐个补齐右括号再试
+    for (let i = 0; i < 3; i++) {
+      c = c.replace(/,\s*$/, "") + (c.trim().endsWith("}") ? "" : (c.includes("[") ? "]" : "}"));
+      v = tryParse(c);
+      if (v) return v;
+    }
+  }
+  return null;
+}
+
+/* 兜底：JSON 实在解析不出来，就用正则把 q/a 配对捞回来，总比整题丢掉强 */
+function salvageQA(text) {
+  const t = String(text || "");
+  const qs = [...t.matchAll(/"q"\s*:\s*"([^"]{4,200})"/g)].map(m => m[1]);
+  const as = [...t.matchAll(/"a"\s*:\s*"([^"]{4,600})"/g)].map(m => m[1]);
+  return qs.map((q, i) => ({ q, a: as[i] || "" }));
+}
+
 function parseAiScores(data) {
   let text = (data && data.choices && data.choices[0] && data.choices[0].message
     && data.choices[0].message.content) || "";
@@ -1857,13 +1903,15 @@ function parseAiScores(data) {
 /* 真正发请求的地方：地址候选 × 参数两档（完整参数 / 极简参数）逐一尝试。
    有些模型不接受 temperature、max_tokens，第一档被 400 拒了就降到极简再试一次。 */
 /* 发一次对话请求，parse(data) 负责把返回体转成想要的结构；不传就用打分那套 */
-async function aiAsk(messages, parse) {
+async function aiAsk(messages, parse, opts) {
   const key = state.ai.key;
+  const maxTokens = (opts && opts.maxTokens) || 1200;
   let lastErr = "未知错误";
+  aiAsk.lastRaw = "";
 
   for (const url of aiChatPaths(state.ai.base)) {
     const bodies = [
-      { model: state.ai.model, temperature: 0.2, max_tokens: 1200, messages },
+      { model: state.ai.model, temperature: 0.2, max_tokens: maxTokens, messages },
       { model: state.ai.model, messages }
     ];
     for (const body of bodies) {
@@ -1893,6 +1941,7 @@ async function aiAsk(messages, parse) {
       catch (_) { return { ok: false, err: "返回的不是 JSON，可能打到了网页而不是接口", fatal: true }; }
 
       const out = (parse || parseAiScores)(data);
+      if (!out) aiAsk.lastRaw = aiTextOf(data).slice(0, 300);
       if (!out) return { ok: false, err: "模型没按要求的 JSON 格式输出，可改用更强一点的模型", fatal: true };
       return { ok: true, map: out };
     }
@@ -2778,29 +2827,35 @@ document.getElementById("ivAi").onclick = async () => {
     ...picked.map(p => `项目《${p.name}》（${p.stack}）：${stripHtml(p.desc)} ` + p.bullets.map(stripHtml).join("；"))
   ].join("\n");
 
-  const sys = "你是技术面试官。根据候选人的简历和岗位 JD，出 8 道最可能被追问的技术细节问题。"
-    + "要求：只围绕简历里写到的技术，不要问简历里没有的；每题给一段 3-5 句的参考回答，第一人称、具体、不说套话。"
-    + "只返回 JSON：{\"items\":[{\"cat\":\"项目或技术\",\"q\":\"问题\",\"a\":\"参考回答\"}]}";
+  const sys = "你是技术面试官。根据候选人的简历和岗位 JD，出 6 道最可能被追问的技术细节问题。"
+    + "要求：只围绕简历里写到的技术，不要问简历里没有的；每题参考回答 2-3 句（不超过 80 字），第一人称、具体、不说套话。"
+    + "只返回 JSON，不要代码块、不要任何解释：{\"items\":[{\"cat\":\"项目或技术\",\"q\":\"问题\",\"a\":\"参考回答\"}]}";
   const user = "岗位 JD：\n" + (state.jd || "（未提供，按简历方向出题）").slice(0, 2000)
     + "\n\n简历：\n" + resume.slice(0, 4000);
 
   const parseItems = (data) => {
-    let text = (data.choices && data.choices[0] && data.choices[0].message
-      && data.choices[0].message.content) || "";
-    if (Array.isArray(text)) text = text.map(t => t.text || "").join("");
-    const str = String(text);
-    const a = str.indexOf("{"), b = str.lastIndexOf("}");
-    if (a < 0 || b <= a) return null;
-    let obj = null;
-    try { obj = JSON.parse(str.slice(a, b + 1)); } catch (_) { return null; }
-    const items = (obj.items || []).filter(x => x && x.q);
-    return items.length ? items : null;
+    const text = aiTextOf(data);
+    const obj = looseJson(text);
+    if (obj) {
+      const raw = Array.isArray(obj) ? obj
+        : (obj.items || obj.questions || obj.list || obj.results || []);
+      const items = raw.filter(x => x && (x.q || x.question));
+      if (items.length) return items.map(x => ({ q: x.q || x.question, a: x.a || x.answer || "", cat: x.cat || "" }));
+    }
+    const salvaged = salvageQA(text);
+    return salvaged.length ? salvaged.map(x => ({ q: x.q, a: x.a, cat: "" })) : null;
   };
 
-  const r = await aiAsk([{ role: "system", content: sys }, { role: "user", content: user }], parseItems);
+  const r = await aiAsk([{ role: "system", content: sys }, { role: "user", content: user }],
+    parseItems, { maxTokens: 3000 });
   btn.disabled = false; btn.textContent = "用 AI 补充题目";
 
-  if (!r.ok) { IV.aiMsg = "生成失败：" + r.err; renderInterview(); return; }
+  if (!r.ok) {
+    const hint = aiAsk.lastRaw ? "\n模型返回开头：" + aiAsk.lastRaw.replace(/\s+/g, " ").slice(0, 120) : "";
+    IV.aiMsg = "生成失败：" + r.err + hint;
+    renderInterview();
+    return;
+  }
 
   IV.ai = r.map.map((x, i) => ({
     id: "ai:" + i, cat: "ai",
@@ -3251,15 +3306,14 @@ document.getElementById("mjAi").onclick = async () => {
   const sys = "你是面试复盘助手。从下面的面经正文里，抽出所有被问到的技术/项目问题，"
     + "去掉客套和流程描述，每题一行，保留提问者的原意。只返回 JSON：{\"items\":[{\"q\":\"问题\"}]}";
   const parse = (data) => {
-    let text = (data.choices && data.choices[0] && data.choices[0].message
-      && data.choices[0].message.content) || "";
-    if (Array.isArray(text)) text = text.map(t => t.text || "").join("");
-    const str = String(text);
-    const a = str.indexOf("{"), b = str.lastIndexOf("}");
-    if (a < 0 || b <= a) return null;
-    let obj = null;
-    try { obj = JSON.parse(str.slice(a, b + 1)); } catch (_) { return null; }
-    const items = (obj.items || []).map(x => String(x.q || "").trim()).filter(Boolean);
+    const text = aiTextOf(data);
+    const obj = looseJson(text);
+    let items = [];
+    if (obj) {
+      const raw = Array.isArray(obj) ? obj : (obj.items || obj.questions || obj.list || []);
+      items = raw.map(x => String((x && (x.q || x.question)) || x || "").trim()).filter(Boolean);
+    }
+    if (!items.length) items = salvageQA(text).map(x => x.q);
     return items.length ? items : null;
   };
   const r = await aiAsk([{ role: "system", content: sys },
