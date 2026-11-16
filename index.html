@@ -259,16 +259,20 @@
              display: none; padding: 28px; overflow: auto; }
   .overlay.on { display: block; }
   .sheet { max-width: 1180px; margin: 0 auto; background: #fff; border-radius: 12px;
-           box-shadow: 0 18px 50px rgba(15, 23, 42, .22); overflow: hidden; }
+           box-shadow: 0 18px 50px rgba(15, 23, 42, .22); overflow: hidden;
+           display: flex; flex-direction: column; max-height: calc(100vh - 56px); }
   .sheet-head { display: flex; align-items: center; gap: 14px; padding: 16px 22px;
                 border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; z-index: 2; }
   .sheet-head h2 { font-size: 15px; margin: 0; font-weight: 600; }
   .sheet-head .grow { flex: 1; }
   .score-badge { display: flex; align-items: baseline; gap: 4px; font-size: 12px; color: var(--muted); }
   .score-badge b { font-size: 24px; color: var(--accent); font-variant-numeric: tabular-nums; }
-  .sheet-body { display: grid; grid-template-columns: 340px 1fr; gap: 0; }
+  .sheet-body { display: grid; grid-template-columns: 340px 1fr; gap: 0;
+                flex: 1; min-height: 0; }
+  .iv-left, .iv-right { overflow: auto; }
+  .iv-left { height: 100%; }
   .iv-left { border-right: 1px solid var(--line); padding: 18px 20px; background: #fcfcfd; }
-  .iv-right { padding: 18px 22px 26px; min-height: 420px; }
+  .iv-right { padding: 18px 22px 26px; }
   .dim { margin-bottom: 14px; }
   .dim-top { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px; }
   .dim-top b { font-variant-numeric: tabular-nums; }
@@ -291,6 +295,9 @@
   .qa-q .idx { color: var(--faint); font-variant-numeric: tabular-nums; font-weight: 400; }
   .qa-a { font-size: 13px; line-height: 1.75; color: #374151; margin-top: 8px;
           border-left: 2px solid #e5e7eb; padding-left: 10px; }
+  .qa.collapsed .qa-a, .qa.collapsed .qa-tools { display: none; }
+  .qa-q { cursor: pointer; }
+  .qa-q .fold { font-size: 11px; color: var(--accent); margin-left: auto; white-space: nowrap; }
   .qa-a[contenteditable]:focus { outline: none; border-left-color: var(--accent); background: #f8fbff; }
   .qa-tag { font-size: 11px; color: #1d4ed8; background: #eef2ff; border-radius: 4px; padding: 1px 6px; }
   .qa-tools { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 11.5px; color: var(--faint); }
@@ -485,6 +492,7 @@
       <h2>简历评估与面试准备</h2>
       <span class="score-badge">综合 <b id="ivScore">--</b><span id="ivScoreNote"></span></span>
       <span class="grow"></span>
+      <button class="mini" id="ivFold">展开全部答案</button>
       <button class="mini" id="ivAi">用 AI 补充题目</button>
       <button class="mini" id="ivExport">导出准备稿</button>
       <button class="mini" id="ivClose">关闭</button>
@@ -1933,6 +1941,7 @@ document.getElementById("btnPdf").onclick = () => {
 ------------------------------------------------------------------ */
 const IV = {
   tab: "tech",
+  open: [],
   ai: LS.get("resume.iv.ai", []),
   answers: LS.get("resume.answers", {}),
   aiMsg: ""
@@ -2151,12 +2160,14 @@ function evalDims() {
   if (skills.length >= 4 && skills.length <= 5) d6 += 20;
   if (quantRate > 0.2) d6 += 20;
 
+  const hasJd = !!(state.jd && state.jd.trim().length > 10);
+
   return [
-    { key: "match", name: "岗位匹配度", w: 30, score: clamp(d1), note: jdTechInJd.length
+    { key: "match", name: "岗位匹配度", w: 30, na: !hasJd, score: clamp(d1), note: jdTechInJd.length
         ? `JD 技术点覆盖 ${projCovered.length}/${jdTechInJd.length}，方向信号 ${dirSum} 分`
         : "JD 里没识别到具体技术词" },
-    { key: "project", name: "项目相关度", w: 20, score: clamp(d2), note: picked.length ? `所选项目与 JD 的平均相关分 ${Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)}` : "还没有选项目" },
-    { key: "skill", name: "技能覆盖", w: 15, score: clamp(d3), note: jdTech.length ? `JD 提到 ${jdTech.length} 个技术词，简历覆盖 ${covered.length} 个` : "JD 里没识别到具体技术词" },
+    { key: "project", name: "项目相关度", w: 20, na: !hasJd, score: clamp(d2), note: picked.length ? `所选项目与 JD 的平均相关分 ${Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)}` : "还没有选项目" },
+    { key: "skill", name: "技能覆盖", w: 15, na: !hasJd, score: clamp(d3), note: jdTech.length ? `JD 提到 ${jdTech.length} 个技术词，简历覆盖 ${covered.length} 个` : "JD 里没识别到具体技术词" },
     { key: "quant", name: "成果量化", w: 15, score: clamp(d4), note: `${bullets.length} 条要点里 ${quant} 条带具体指标` },
     { key: "depth", name: "项目深度", w: 10, score: clamp(d5), note: "看要点数量、是否讲清做法、有没有结果" },
     { key: "layout", name: "版面规范", w: 10, score: clamp(d6), note: `${picked.length} 个项目、正文约 ${totalChars} 字、技能 ${skills.length} 行` }
@@ -2167,6 +2178,10 @@ function clamp(n) { return Math.max(0, Math.min(100, Math.round(n))); }
 
 function evalAdvice(dims) {
   const out = [];
+  // 没 JD 时匹配相关的建议全是噪音，只留一句
+  if (!state.jd || state.jd.trim().length <= 10) {
+    return ["还没粘 JD，先把招聘要求整段粘到左栏，匹配度和相关度才有意义。"];
+  }
   const by = k => dims.find(d => d.key === k);
   if (by("match").score < 60) out.push("意向和项目跟 JD 对不太上：换一段更贴的 JD，或在项目要点里补上 JD 里的技术词（不用编，把实际做过的换个说法）。");
   if (by("skill").score < 70) {
@@ -2178,7 +2193,6 @@ function evalAdvice(dims) {
   if (by("quant").score < 60) out.push("要点缺结果：把「实现了 X」改成「X 把 A 从 240ms 降到 90ms」这种，哪怕只有一个数字，说服力也完全不同。");
   if (by("depth").score < 70) out.push("项目讲得偏浅：每个项目至少留 3 条要点，一条讲做法、一条讲难点、一条讲结果。");
   if (by("layout").score < 70) out.push("版面：项目控制在 2-3 个、技能 4-5 行、正文 700-1600 字，现在偏长或偏短。");
-  if (!state.jd) out.push("还没粘 JD，匹配度是按空 JD 算的，先粘一段再评估。");
   return out;
 }
 
@@ -2278,7 +2292,9 @@ function allQuestions() {
 
 /* ---------- 渲染 ---------- */
 function ivScoreOf(dims) {
-  return Math.round(dims.reduce((a, d) => a + d.score * d.w, 0) / dims.reduce((a, d) => a + d.w, 0));
+  const use = dims.filter(d => !d.na);
+  if (!use.length) return 0;
+  return Math.round(use.reduce((a, d) => a + d.score * d.w, 0) / use.reduce((a, d) => a + d.w, 0));
 }
 
 function renderInterview() {
@@ -2286,12 +2302,21 @@ function renderInterview() {
   const total = ivScoreOf(dims);
 
   const scoreEl = document.getElementById("ivScore");
-  scoreEl.textContent = total;
-  document.getElementById("ivScoreNote").textContent =
-    total >= 80 ? " · 可以直接投" : total >= 65 ? " · 改几处更好" : " · 建议先补强";
+  const hasJd = !!(state.jd && state.jd.trim().length > 10);
+  scoreEl.textContent = hasJd ? (total || "—") : "—";
+  document.getElementById("ivScoreNote").textContent = !hasJd
+    ? " · 先粘 JD"
+    : total >= 80 ? " · 可以直接投" : total >= 65 ? " · 改几处更好" : " · 建议先补强";
 
   // 左栏
   const bars = dims.map(d => {
+    if (d.na) {
+      return `<div class="dim">
+        <div class="dim-top"><span>${d.name} · 权重 ${d.w}%</span><b>—</b></div>
+        <div class="dim-bar"><i style="width:100%;background:repeating-linear-gradient(45deg,#eef0f3,#eef0f3 4px,#e3e6ea 4px,#e3e6ea 8px)"></i></div>
+        <div class="dim-note">先粘一段 JD 才能算</div>
+      </div>`;
+    }
     const cls = d.score >= 75 ? "" : d.score >= 55 ? " warn" : " bad";
     return `<div class="dim">
       <div class="dim-top"><span>${d.name} · 权重 ${d.w}%</span><b>${d.score}</b></div>
@@ -2328,17 +2353,23 @@ function renderInterview() {
       : "这一类暂时没有题目。"}</div>`;
     return;
   }
+  const open = new Set(IV.open || []);
   box.innerHTML = list.map((q, i) => {
     const ans = IV.answers[q.id] != null ? IV.answers[q.id] : q.a;
-    return `<div class="qa">
+    const isOpen = open.has(q.id);
+    return `<div class="qa${isOpen ? "" : " collapsed"}" data-qwrap="${q.id}">
       <div class="qa-q"><span class="idx">${String(i + 1).padStart(2, "0")}</span>
         <span>${q.q}</span>
-        ${q.tag ? `<span class="qa-tag">${q.tag}</span>` : ""}</div>
+        ${q.tag ? `<span class="qa-tag">${q.tag}</span>` : ""}
+        <span class="fold">${isOpen ? "收起" : "看答案"}</span></div>
       <div class="qa-a" contenteditable="true" data-qid="${q.id}">${ans}</div>
       <div class="qa-tools">答案可以直接改，改完自动保存 ·
         <a href="#" data-reset="${q.id}">恢复默认</a></div>
     </div>`;
   }).join("");
+
+  // 展开状态记一下，切换标签回来还在
+  box._openSet = open;
 }
 
 function openInterview() {
@@ -2354,6 +2385,20 @@ document.addEventListener("keydown", (e) => {
 });
 document.getElementById("ivOverlay").addEventListener("click", (e) => {
   if (e.target.id === "ivOverlay") e.currentTarget.classList.remove("on");
+
+  // 点题干展开/收起答案，不重绘整页，免得打断正在编辑的答案
+  const q = e.target.closest(".qa");
+  if (q && e.target.closest(".qa-q") && !e.target.closest("[data-reset]")) {
+    const id = q.dataset.qwrap;
+    IV.open = IV.open || [];
+    const i = IV.open.indexOf(id);
+    if (i >= 0) IV.open.splice(i, 1); else IV.open.push(id);
+    q.classList.toggle("collapsed", i >= 0);
+    const fold = q.querySelector(".fold");
+    if (fold) fold.textContent = i >= 0 ? "看答案" : "收起";
+    return;
+  }
+
   const tab = e.target.closest("[data-tab]");
   if (tab) { IV.tab = tab.dataset.tab; renderInterview(); }
   const reset = e.target.closest("[data-reset]");
@@ -2370,6 +2415,14 @@ document.addEventListener("input", (e) => {
   IV.answers[qa.dataset.qid] = qa.innerHTML;
   LS.set("resume.answers", IV.answers);
 });
+
+document.getElementById("ivFold").onclick = () => {
+  const list = allQuestions().filter(q => q.cat === IV.tab);
+  const allOpen = list.every(q => (IV.open || []).indexOf(q.id) >= 0);
+  IV.open = allOpen ? [] : list.map(q => q.id);
+  document.getElementById("ivFold").textContent = allOpen ? "展开全部答案" : "收起全部答案";
+  renderInterview();
+};
 
 document.getElementById("ivAi").onclick = async () => {
   const btn = document.getElementById("ivAi");
