@@ -456,6 +456,7 @@ const state = {
   overrides: LS.get("resume.overrides", {}),
   selected: LS.get("resume.selected", []),
   skills: [],
+  skillsEdit: LS.get("resume.skills", null),
   jd: LS.get("resume.jd", ""),
   analysis: { text: "", dirScore: {} },
   aiScores: null,
@@ -582,6 +583,16 @@ function composeSkills(projectIds, order) {
 /* ------------------------------------------------------------------
    渲染
 ------------------------------------------------------------------ */
+/* 技能默认由选中的项目汇总；一旦手动改过就用改后的版本，换项目时再自动失效 */
+function currentSkills() {
+  return (state.skillsEdit && state.skillsEdit.length) ? state.skillsEdit : (state.skills || []);
+}
+
+function clearSkillEdit() {
+  state.skillsEdit = null;
+  LS.del("resume.skills");
+}
+
 function currentOrder() {
   const ds = (state.analysis && state.analysis.dirScore) || {};
   let best = null, max = 0;
@@ -637,6 +648,7 @@ function toggle(id) {
   }
   LS.set("resume.touched", true);
   LS.set("resume.selected", state.selected);
+  clearSkillEdit();
   state.skills = composeSkills(state.selected, currentOrder());
   renderProjects(); renderPaper();
 }
@@ -751,21 +763,26 @@ function renderPaper() {
 
   const projectsHtml = picked.map(p => {
     const ov = state.overrides[p.id] || {};
-    const desc = ov.desc != null ? ov.desc : p.desc;
+    const val = (key, fallback) => (ov[key] != null ? ov[key] : fallback);
+    const pe = (key, text, cls) =>
+      `<span${cls ? ` class="${cls}"` : ""} contenteditable="true" data-pid="${p.id}" data-i="${key}">${text}</span>`;
+
     const items = p.bullets.map((b, i) => {
       const text = ov["b" + i] != null ? ov["b" + i] : b;
       return `<li contenteditable="true" data-pid="${p.id}" data-i="${i}">${text}</li>`;
     }).join("");
+    const rawSite = val("url", p.url);
+    const site = /^https?:\/\//.test(rawSite) ? rawSite : "https://" + rawSite;
     return `
       <div class="proj-item">
         <div class="proj-title">
-          <span class="date">${p.period}</span>
-          <span>${p.name}</span>
-          <span class="role">　${p.role}</span>
+          <span class="date">${pe("period", val("period", p.period))}</span>
+          ${pe("name", val("name", p.name))}
+          <span class="role">　${pe("role", val("role", p.role))}</span>
         </div>
-        <div class="proj-desc" contenteditable="true" data-pid="${p.id}" data-i="desc">${desc}</div>
-        <div class="proj-url">项目地址：<a href="${p.url}" target="_blank">${p.url.replace("https://", "")}</a></div>
-        <div class="proj-stack"><b>技术栈</b>：${p.stack}</div>
+        <div class="proj-desc" contenteditable="true" data-pid="${p.id}" data-i="desc">${val("desc", p.desc)}</div>
+        <div class="proj-url">项目地址：<a href="${site}" target="_blank" data-pid="${p.id}" data-i="url-link"><span contenteditable="true" data-pid="${p.id}" data-i="url">${site.replace("https://", "")}</span></a></div>
+        <div class="proj-stack"><b>技术栈</b>：${pe("stack", val("stack", p.stack))}</div>
         <ul>${items}</ul>
       </div>`;
   }).join("");
@@ -791,7 +808,7 @@ function renderPaper() {
       <div class="sec-title">教育经历</div>
       <div class="edu-line">
         <span class="date">${ce("edu.period", PROFILE.edu.period)}</span>
-        <span><b>${ce("edu.school", PROFILE.edu.school)}</b>　${ce("edu.major", PROFILE.edu.major)} · ${PROFILE.edu.degree}${gradTag()}</span>
+        <span><b>${ce("edu.school", PROFILE.edu.school)}</b>　${ce("edu.major", PROFILE.edu.major)} · ${ce("edu.degree", PROFILE.edu.degree)}${gradTag()}</span>
       </div>
       <div class="muted">主修课程：${ce("edu.courses", PROFILE.edu.courses)}</div>
       <div class="muted">${ce("extra", PROFILE.extra)}</div>
@@ -804,7 +821,8 @@ function renderPaper() {
 
     <div class="sec">
       <div class="sec-title">专业技能</div>
-      <ul>${(state.skills || []).map(x => `<li>${x}</li>`).join("")}</ul>
+      <ul>${currentSkills().map((x, i) =>
+        `<li contenteditable="true" data-skill="${i}">${x}</li>`).join("")}</ul>
     </div>
   `;
 
@@ -826,12 +844,29 @@ document.addEventListener("input", (e) => {
   const el = e.target.closest("[contenteditable]");
   if (!el) return;
 
+  const sk = el.dataset.skill;
+  if (sk != null) {
+    // 手改了技能行：先把手改前的整组拷一份，再替换这一行
+    if (!state.skillsEdit) state.skillsEdit = currentSkills().slice();
+    state.skillsEdit[Number(sk)] = el.innerHTML;
+    LS.set("resume.skills", state.skillsEdit);
+    return;
+  }
+
   const pid = el.dataset.pid;
   if (pid) {
     const i = el.dataset.i;
     if (!state.overrides[pid]) state.overrides[pid] = {};
-    state.overrides[pid][i === "desc" ? "desc" : "b" + i] = el.innerHTML;
+    const key = /^\d+$/.test(i) ? "b" + i : i;
+    state.overrides[pid][key] = el.innerHTML;
     LS.set("resume.overrides", state.overrides);
+
+    // 项目地址是链接：改了文字要把 href 一起改掉，否则点开还是老地址
+    if (key === "url") {
+      const a = el.closest("a");
+      const href = el.innerText.trim();
+      if (a) a.setAttribute("href", /^https?:\/\//.test(href) ? href : "https://" + href);
+    }
     return;
   }
 
@@ -892,6 +927,8 @@ photoInput.addEventListener("change", () => {
 });
 
 document.addEventListener("click", (e) => {
+  // 项目地址在预览里是拿来改的，点上去不能直接跳走
+  if (e.target.closest('#paper [data-i="url"]')) e.preventDefault();
   if (e.target.closest("#photoDel")) {
     state.photo = null; localStorage.removeItem("resume.photo"); renderPaper(); return;
   }
@@ -1130,6 +1167,7 @@ function exportWord() {
   let body = document.getElementById("paper").innerHTML;
   body = body.replace(/<button class="photo-del"[\s\S]*?<\/button>/g, "");
   body = body.replace(/ contenteditable="true"/g, "");
+  body = body.replace(/ data-(?:pid|i|k|skill)="[^"]*"/g, "");   // 编辑用的标记不要带进 Word
 
   if (state.photo) {
     body = body.replace(/<div class="head-photo"[^>]*>[\s\S]*?<button[\s\S]*?<\/button><\/div>/,
@@ -1209,6 +1247,7 @@ jdEl.addEventListener("input", () => {
     renderProjects();
 
     LS.set("resume.jd", state.jd);
+    clearSkillEdit();
     // 换了 JD 就按新 JD 重新推断；手改过的意向只在刷新页面时保留
     state.intentManual = false;
     LS.set("resume.intentManual", false);
