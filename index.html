@@ -104,6 +104,7 @@
   .proj-stack { font-size: .857em; color: #555; margin-top: calc(1px * var(--fill)); }
   .proj-stack b { font-weight: 600; color: #333; }
   .grad { color: #555; font-size: .952em; }
+  .paper .ph { color: #b45309; border-bottom: 1px dashed #f0b46a; }
   ul { margin: calc(3px * var(--fill)) 0 0; padding-left: 16px; }
   li { font-size: .933em; margin-bottom: calc(1.5px * var(--fill)); line-height: var(--lh); }
   li b { font-weight: 600; }
@@ -146,6 +147,14 @@
 
 <div class="layout">
   <div class="left">
+    <div class="panel">
+      <h2>待填内容 <em id="todoCount">0 项</em></h2>
+      <div class="hint">
+        简历上带虚线的都是还没填的占位内容。点一下直接跳到那一处，改完自动保存。
+      </div>
+      <div class="chips" id="todoList"></div>
+    </div>
+
     <div class="panel">
       <h2>目标岗位 JD <em>粘贴后自动生成</em></h2>
       <div class="hint">
@@ -223,7 +232,7 @@ const PROFILE = Object.assign({
   mail: "（邮箱）", home: "（个人主页）", intent: "Java 后端开发",
   edu: {
     school: "（学校）", major: "（专业）", degree: "本科",
-    period: "（起止年月）", courses: "（主修课程）"
+    period: "2023/09 - 2027/07", courses: "（主修课程）"
   },
   extra: "（其他补充）"
 }, window.PROFILE_OVERRIDE || {});
@@ -625,8 +634,53 @@ function toggle(id) {
   renderProjects(); renderPaper();
 }
 
+/* 还带括号的（姓名）（学校）这类，就是没填的占位内容 */
+function isPlaceholder(v) {
+  return !String(v == null ? "" : v).trim() || /^（.*）$/.test(String(v).trim());
+}
+
 function ce(k, value) {
-  return `<span contenteditable="true" data-k="${k}">${value || ""}</span>`;
+  const v = value == null ? "" : value;
+  return `<span contenteditable="true" data-k="${k}"${isPlaceholder(v) ? ' class="ph"' : ""}>${v}</span>`;
+}
+
+/* 把还要自己填的地方单独列出来，避免漏填就导出 */
+const TODO_FIELDS = [
+  ["name", "姓名"], ["birth", "出生年月"], ["phone", "手机号"], ["mail", "邮箱"],
+  ["home", "个人主页"], ["edu.school", "学校"], ["edu.major", "专业"],
+  ["edu.period", "起止时间"], ["edu.courses", "主修课程"], ["extra", "其他补充"]
+];
+
+function fieldValue(key) {
+  return key.indexOf("edu.") === 0 ? PROFILE.edu[key.slice(4)] : PROFILE[key];
+}
+
+function renderTodo() {
+  const box = document.getElementById("todoList");
+  const left = TODO_FIELDS.filter(([k]) => isPlaceholder(fieldValue(k)));
+  box.innerHTML = "";
+
+  if (!left.length) {
+    const s = document.createElement("span");
+    s.className = "chip hit";
+    s.textContent = "都填好了";
+    box.appendChild(s);
+  } else {
+    for (const [k, label] of left) {
+      const b = document.createElement("button");
+      b.className = "chip";
+      b.textContent = label;
+      b.onclick = () => {
+        const el = document.querySelector(`#paper [data-k="${k}"]`);
+        if (!el) return;
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.focus();
+      };
+      box.appendChild(b);
+    }
+  }
+  document.getElementById("todoCount").textContent =
+    left.length ? `还差 ${left.length} 项` : "已填完";
 }
 
 /* ------------------------------------------------------------------
@@ -777,12 +831,14 @@ document.addEventListener("input", (e) => {
   const k = el.dataset.k;
   if (!k) return;
   const val = el.innerText.trim();
+  el.classList.toggle("ph", isPlaceholder(val));   // 填上了就把虚线去掉
 
   if (k === "intent") {
     // 手改的意向就地保存，下次粘 JD 会被新的推断覆盖
     PROFILE.intent = val;
     state.profile.intent = val;
     saveProfile();
+    renderTodo();
     return;
   }
   if (k.indexOf("edu.") === 0) {
@@ -793,6 +849,7 @@ document.addEventListener("input", (e) => {
     state.profile[k] = val;
   }
   saveProfile();
+  renderTodo();
 });
 
 /* ------------------------------------------------------------------
@@ -1245,6 +1302,7 @@ document.getElementById("btnPdf").onclick = () => {
 updateAiState();
 state.selected = DEFAULT_PICK.filter(id => PROJECTS.some(p => p.id === id));
 state.skills = composeSkills(state.selected, DEFAULT_ORDER);
+renderTodo();
 renderJdChips();
 renderProjects();
 renderPaper();
