@@ -165,20 +165,34 @@
         配置一个 OpenAI 兼容接口，可以让模型判断哪个项目更贴合 JD。
         不配置也能用，走关键词打分。
       </div>
+      <label>快捷填充</label>
+      <div class="chips" id="aiProviders">
+        <button class="chip" data-base="https://api.deepseek.com/v1" data-model="deepseek-chat">DeepSeek</button>
+        <button class="chip" data-base="https://dashscope.aliyuncs.com/compatible-mode/v1" data-model="qwen-plus">通义千问</button>
+        <button class="chip" data-base="https://open.bigmodel.cn/api/paas/v4" data-model="glm-4-flash">智谱</button>
+        <button class="chip" data-base="https://api.moonshot.cn/v1" data-model="moonshot-v1-8k">Kimi</button>
+        <button class="chip" data-base="https://api.siliconflow.cn/v1" data-model="Qwen/Qwen2.5-7B-Instruct">硅基流动</button>
+        <button class="chip" data-base="https://api.openai.com/v1" data-model="gpt-4o-mini">OpenAI</button>
+      </div>
       <label>接口地址</label>
       <input type="text" id="aiBase" placeholder="https://api.deepseek.com/v1">
       <div class="row2">
-        <div><label>模型</label><input type="text" id="aiModel" placeholder="deepseek-chat"></div>
+        <div><label>模型</label>
+          <input type="text" id="aiModel" placeholder="deepseek-chat" list="aiModelList">
+          <datalist id="aiModelList"></datalist>
+        </div>
         <div><label>密钥</label><input type="password" id="aiKey" placeholder="sk-..."></div>
       </div>
-      <div style="display:flex; gap:8px; margin-top:10px">
+      <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap">
         <button class="mini" id="btnAiRun">用 AI 重新打分</button>
+        <button class="mini" id="btnAiProbe">拉取可用模型</button>
         <button class="mini" id="btnAiClear">清除配置</button>
       </div>
       <div class="hint" id="aiMsg" style="margin-top:8px"></div>
       <div class="hint warn" style="margin-top:8px">
         密钥只存在这台浏览器的 localStorage，不随页面或仓库上传。
-        若接口不允许跨域，浏览器会拦截，此时仍可用关键词打分。
+        HTTP 400 多为模型名或地址不对，点“拉取可用模型”可核对；
+        若接口不允许跨域，浏览器会直接拦截，此时仍可用关键词打分。
       </div>
     </div>
   </div>
@@ -783,6 +797,114 @@ function updateAiState() {
   document.getElementById("aiKey").value = state.ai.key || "";
 }
 
+/* 地址归一：用户可能填 .../v1、.../v1/、整个 .../chat/completions，也可能漏了 /v1。
+   这里不猜死在一种写法上，按可能性给出候选路径依次尝试。 */
+function aiChatPaths(base) {
+  const b = (base || "").trim().replace(/\/+$/, "");
+  if (!b) return [];
+  if (/\/chat\/completions$/.test(b)) return [b];
+  const out = [b + "/chat/completions"];
+  if (!/\/v\d+$/.test(b)) out.push(b + "/v1/chat/completions");
+  return out;
+}
+
+function aiModelPaths(base) {
+  const b = (base || "").trim().replace(/\/+$/, "").replace(/\/chat\/completions$/, "");
+  if (!b) return [];
+  if (/\/v\d+$/.test(b)) return [b + "/models"];
+  return [b + "/v1/models", b + "/models"];
+}
+
+/* 400 的响应体里通常写着真实原因（模型不存在、参数非法），必须读出来给用户看 */
+async function readAiError(resp) {
+  let raw = "";
+  try { raw = await resp.text(); } catch (_) {}
+  let detail = "";
+  try {
+    const j = JSON.parse(raw);
+    detail = (j.error && (j.error.message || j.error.code || j.error.type))
+      || j.message || j.msg || j.detail || "";
+    if (detail && typeof detail !== "string") detail = JSON.stringify(detail);
+  } catch (_) {}
+  if (!detail) {
+    detail = (raw || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+  }
+
+  const s = resp.status;
+  let tip = "";
+  if (s === 401 || s === 403) tip = "密钥无效，或这个密钥没有该模型的权限";
+  else if (s === 404) tip = "接口地址不对，多半是 /v1 写错或重复写了 /chat/completions";
+  else if (s === 429) tip = "余额不足、并发超限或被限流";
+  else if (s === 400 || s === 422) {
+    if (/model|模型|not.?exist|no.?such/i.test(detail)) tip = "模型名不存在，点“拉取可用模型”抄一个填进来";
+    else if (/api.?key|token|auth|unauthor/i.test(detail)) tip = "密钥格式不对，检查是否复制完整";
+    else if (/temperature|max_tokens|param|unsupported/i.test(detail)) tip = "该模型不接受某个请求参数";
+    else tip = "请求被服务端拒绝";
+  } else if (s >= 500) tip = "服务端故障，稍后重试或换个模型";
+  return { code: s, detail, tip };
+}
+
+function parseAiScores(data) {
+  let text = (data && data.choices && data.choices[0] && data.choices[0].message
+    && data.choices[0].message.content) || "";
+  if (Array.isArray(text)) text = text.map(t => t.text || "").join("");
+  const s = String(text);
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  if (a < 0 || b <= a) return null;
+  let obj = null;
+  try { obj = JSON.parse(s.slice(a, b + 1)); } catch (_) { return null; }
+  const map = {};
+  for (const r of obj.results || []) {
+    if (r && r.id) map[r.id] = { score: Number(r.score) || 0, reason: r.reason || "" };
+  }
+  return Object.keys(map).length ? map : null;
+}
+
+/* 真正发请求的地方：地址候选 × 参数两档（完整参数 / 极简参数）逐一尝试。
+   有些模型不接受 temperature、max_tokens，第一档被 400 拒了就降到极简再试一次。 */
+async function aiScoreProjects(messages) {
+  const key = state.ai.key;
+  let lastErr = "未知错误";
+
+  for (const url of aiChatPaths(state.ai.base)) {
+    const bodies = [
+      { model: state.ai.model, temperature: 0.2, max_tokens: 1200, messages },
+      { model: state.ai.model, messages }
+    ];
+    for (const body of bodies) {
+      let resp;
+      try {
+        resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+          body: JSON.stringify(body)
+        });
+      } catch (e) {
+        // fetch 抛 TypeError 基本就是 CORS 或域名不通，换地址也没意义
+        return { ok: false, err: "请求没能发出（" + (e.message || "网络错误")
+          + "）。多为该接口不允许浏览器直连，或地址写错。", fatal: true };
+      }
+
+      if (!resp.ok) {
+        const e = await readAiError(resp);
+        lastErr = e.code + (e.tip ? "，" + e.tip : "") + (e.detail ? "。服务端返回：" + e.detail : "");
+        if (e.code === 404) break;                       // 地址错，换下一条路径
+        if (e.code === 400 || e.code === 422) continue;  // 参数问题，用极简请求再来一次
+        return { ok: false, err: lastErr, fatal: true };  // 401/403/429/5xx 重试无意义
+      }
+
+      let data;
+      try { data = await resp.json(); }
+      catch (_) { return { ok: false, err: "返回的不是 JSON，可能打到了网页而不是接口", fatal: true }; }
+
+      const map = parseAiScores(data);
+      if (!map) return { ok: false, err: "模型没按要求的 JSON 格式输出，可改用更强一点的模型", fatal: true };
+      return { ok: true, map };
+    }
+  }
+  return { ok: false, err: lastErr, fatal: true };
+}
+
 async function runAi() {
   const msg = document.getElementById("aiMsg");
   if (!state.jd || state.jd.trim().length < 30) { msg.textContent = "先在左边粘一段 JD。"; return; }
@@ -796,33 +918,59 @@ async function runAi() {
     + "只返回 JSON：{\"results\":[{\"id\":\"项目id\",\"score\":0-100,\"reason\":\"不超过30字的中文理由\"}]}";
   const user = "岗位 JD：\n" + state.jd.slice(0, 3000) + "\n\n候选项目：\n" + JSON.stringify(list, null, 1);
 
-  try {
-    const url = state.ai.base.replace(/\/+$/, "") + "/chat/completions";
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + state.ai.key },
-      body: JSON.stringify({
-        model: state.ai.model, temperature: 0.2,
-        messages: [{ role: "system", content: sys }, { role: "user", content: user }]
-      })
-    });
-    if (!resp.ok) throw new Error("HTTP " + resp.status);
-    const data = await resp.json();
-    const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
-    const jsonText = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
-    const parsed = JSON.parse(jsonText);
+  const r = await aiScoreProjects([
+    { role: "system", content: sys },
+    { role: "user", content: user }
+  ]);
 
-    const map = {};
-    for (const r of parsed.results || []) if (r && r.id) map[r.id] = { score: Number(r.score) || 0, reason: r.reason || "" };
-    if (!Object.keys(map).length) throw new Error("返回内容无法解析");
-    state.aiScores = map;
+  if (r.ok) {
+    state.aiScores = r.map;
     renderProjects();
     msg.textContent = "已按 AI 结果重排，点选项目即可加入。";
-  } catch (e) {
+  } else {
     state.aiScores = null;
     renderProjects();
-    msg.textContent = "调用失败：" + e.message + "。可能是密钥无效、模型名不对，或接口不允许跨域。当前仍按关键词打分。";
+    msg.textContent = "调用失败：" + r.err + " 当前仍按关键词打分。";
   }
+}
+
+/* 拉 /models 列出可用模型，直接解决“模型名写错”这类 400 */
+async function probeAiModels() {
+  const msg = document.getElementById("aiMsg");
+  if (!state.ai.base) { msg.textContent = "先填接口地址。"; return; }
+  if (!state.ai.key) { msg.textContent = "先填密钥。"; return; }
+
+  msg.textContent = "拉取模型列表中…";
+  let lastErr = "接口未提供 /models";
+
+  for (const url of aiModelPaths(state.ai.base)) {
+    let resp;
+    try {
+      resp = await fetch(url, { headers: { "Authorization": "Bearer " + state.ai.key } });
+    } catch (e) {
+      msg.textContent = "拉取失败：请求没能发出（" + (e.message || "网络错误")
+        + "）。该接口可能不允许浏览器直连，直接手填模型名即可。";
+      return;
+    }
+    if (!resp.ok) {
+      const e = await readAiError(resp);
+      lastErr = e.code + (e.tip ? "，" + e.tip : "") + (e.detail ? "。" + e.detail : "");
+      continue;
+    }
+    let data;
+    try { data = await resp.json(); } catch (_) { lastErr = "返回的不是 JSON"; continue; }
+
+    const ids = (data.data || data.models || [])
+      .map(x => (typeof x === "string" ? x : x.id || x.name || x.model)).filter(Boolean);
+    if (!ids.length) { lastErr = "返回里没有模型列表"; continue; }
+
+    document.getElementById("aiModelList").innerHTML =
+      ids.map(i => `<option value="${String(i).replace(/"/g, "&quot;")}"></option>`).join("");
+    msg.textContent = "找到 " + ids.length + " 个模型（" + ids.slice(0, 3).join(" / ")
+      + (ids.length > 3 ? " …" : "") + "），点模型输入框可下拉选。";
+    return;
+  }
+  msg.textContent = "拉取失败：" + lastErr + "。可以手填模型名。";
 }
 
 /* ------------------------------------------------------------------
@@ -947,6 +1095,22 @@ document.getElementById("btnAi").onclick = () => {
   runAi();
 };
 document.getElementById("btnAiRun").onclick = runAi;
+document.getElementById("btnAiProbe").onclick = probeAiModels;
+
+document.getElementById("aiProviders").addEventListener("click", (e) => {
+  const btn = e.target.closest(".chip");
+  if (!btn) return;
+  state.ai = {
+    base: btn.dataset.base,
+    model: btn.dataset.model,
+    // 只换地址和模型，密钥沿用已填的
+    key: document.getElementById("aiKey").value.trim() || (state.ai && state.ai.key) || ""
+  };
+  LS.set("resume.ai", state.ai);
+  updateAiState();
+  document.getElementById("aiMsg").textContent =
+    "已填入 " + btn.textContent.trim() + " 的地址与默认模型，补上密钥即可。";
+});
 document.getElementById("btnAiClear").onclick = () => {
   state.ai = { base: "", model: "", key: "" };
   LS.del("resume.ai");
