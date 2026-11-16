@@ -128,6 +128,55 @@
     .photo-del { display: none; }
     [contenteditable="true"]:hover, [contenteditable="true"]:focus { background: transparent; box-shadow: none; }
   }
+
+  /* ---------- 面试评估 ---------- */
+  .overlay { position: fixed; inset: 0; z-index: 60; background: rgba(15, 23, 42, .38);
+             display: none; padding: 28px; overflow: auto; }
+  .overlay.on { display: block; }
+  .sheet { max-width: 1180px; margin: 0 auto; background: #fff; border-radius: 12px;
+           box-shadow: 0 18px 50px rgba(15, 23, 42, .22); overflow: hidden; }
+  .sheet-head { display: flex; align-items: center; gap: 14px; padding: 16px 22px;
+                border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; z-index: 2; }
+  .sheet-head h2 { font-size: 15px; margin: 0; font-weight: 600; }
+  .sheet-head .grow { flex: 1; }
+  .score-badge { display: flex; align-items: baseline; gap: 4px; font-size: 12px; color: var(--muted); }
+  .score-badge b { font-size: 24px; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .sheet-body { display: grid; grid-template-columns: 340px 1fr; gap: 0; }
+  .iv-left { border-right: 1px solid var(--line); padding: 18px 20px; background: #fcfcfd; }
+  .iv-right { padding: 18px 22px 26px; min-height: 420px; }
+  .dim { margin-bottom: 14px; }
+  .dim-top { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px; }
+  .dim-top b { font-variant-numeric: tabular-nums; }
+  .dim-bar { height: 6px; border-radius: 3px; background: #eef0f3; overflow: hidden; }
+  .dim-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+  .dim-bar i.warn { background: #d97706; }
+  .dim-bar i.bad { background: #dc2626; }
+  .dim-note { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
+  .iv-sub { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .04em;
+            margin: 18px 0 8px; }
+  .iv-sub:first-child { margin-top: 0; }
+  .gap-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 14px; flex-wrap: wrap; }
+  .tab { font-size: 12.5px; padding: 6px 12px; border-radius: 6px 6px 0 0; cursor: pointer;
+         border: 1px solid transparent; border-bottom: none; background: transparent; color: var(--muted); }
+  .tab.on { background: #fff; border-color: var(--line); color: var(--text); font-weight: 600;
+            margin-bottom: -1px; }
+  .qa { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+  .qa-q { font-size: 13.5px; font-weight: 600; line-height: 1.6; display: flex; gap: 8px; }
+  .qa-q .idx { color: var(--faint); font-variant-numeric: tabular-nums; font-weight: 400; }
+  .qa-a { font-size: 13px; line-height: 1.75; color: #374151; margin-top: 8px;
+          border-left: 2px solid #e5e7eb; padding-left: 10px; }
+  .qa-a[contenteditable]:focus { outline: none; border-left-color: var(--accent); background: #f8fbff; }
+  .qa-tag { font-size: 11px; color: #1d4ed8; background: #eef2ff; border-radius: 4px; padding: 1px 6px; }
+  .qa-tools { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 11.5px; color: var(--faint); }
+  .qa-tools a { color: var(--muted); }
+  .iv-empty { font-size: 12.5px; color: var(--muted); padding: 20px 0; }
+  @media (max-width: 1024px) {
+    .sheet-body { grid-template-columns: 1fr; }
+    .iv-left { border-right: none; border-bottom: 1px solid var(--line); }
+    .overlay { padding: 12px; }
+  }
+  @media print { .overlay { display: none !important; } }
 </style>
 </head>
 <body>
@@ -140,8 +189,29 @@
   <div class="actions">
     <button id="btnSample" class="mini">示例 JD</button>
     <button id="btnAi" class="mini">AI 分析</button>
+    <button id="btnIv" class="mini">面试评估</button>
     <button id="btnWord">导出 Word</button>
     <button id="btnPdf" class="primary">导出 PDF</button>
+  </div>
+</div>
+
+<div class="overlay" id="ivOverlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2>简历评估与面试准备</h2>
+      <span class="score-badge">综合 <b id="ivScore">--</b><span id="ivScoreNote"></span></span>
+      <span class="grow"></span>
+      <button class="mini" id="ivAi">用 AI 补充题目</button>
+      <button class="mini" id="ivExport">导出准备稿</button>
+      <button class="mini" id="ivClose">关闭</button>
+    </div>
+    <div class="sheet-body">
+      <div class="iv-left" id="ivLeft"></div>
+      <div class="iv-right">
+        <div class="tabs" id="ivTabs"></div>
+        <div id="ivList"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1015,7 +1085,8 @@ function parseAiScores(data) {
 
 /* 真正发请求的地方：地址候选 × 参数两档（完整参数 / 极简参数）逐一尝试。
    有些模型不接受 temperature、max_tokens，第一档被 400 拒了就降到极简再试一次。 */
-async function aiScoreProjects(messages) {
+/* 发一次对话请求，parse(data) 负责把返回体转成想要的结构；不传就用打分那套 */
+async function aiAsk(messages, parse) {
   const key = state.ai.key;
   let lastErr = "未知错误";
 
@@ -1050,9 +1121,9 @@ async function aiScoreProjects(messages) {
       try { data = await resp.json(); }
       catch (_) { return { ok: false, err: "返回的不是 JSON，可能打到了网页而不是接口", fatal: true }; }
 
-      const map = parseAiScores(data);
-      if (!map) return { ok: false, err: "模型没按要求的 JSON 格式输出，可改用更强一点的模型", fatal: true };
-      return { ok: true, map };
+      const out = (parse || parseAiScores)(data);
+      if (!out) return { ok: false, err: "模型没按要求的 JSON 格式输出，可改用更强一点的模型", fatal: true };
+      return { ok: true, map: out };
     }
   }
   return { ok: false, err: lastErr, fatal: true };
@@ -1071,7 +1142,7 @@ async function runAi() {
     + "只返回 JSON：{\"results\":[{\"id\":\"项目id\",\"score\":0-100,\"reason\":\"不超过30字的中文理由\"}]}";
   const user = "岗位 JD：\n" + state.jd.slice(0, 3000) + "\n\n候选项目：\n" + JSON.stringify(list, null, 1);
 
-  const r = await aiScoreProjects([
+  const r = await aiAsk([
     { role: "system", content: sys },
     { role: "user", content: user }
   ]);
@@ -1358,6 +1429,538 @@ document.getElementById("btnWord").onclick = exportWord;
 document.getElementById("btnPdf").onclick = () => {
   document.getElementById("statusText").textContent = "在打印窗口里选择「另存为 PDF」";
   window.print();
+};
+
+/* ------------------------------------------------------------------
+   面试评估与题库
+------------------------------------------------------------------ */
+const IV = {
+  tab: "tech",
+  ai: LS.get("resume.iv.ai", []),
+  answers: LS.get("resume.answers", {}),
+  aiMsg: ""
+};
+
+/* JD 里常出现、简历上也该出现的技术词，用来找缺口 */
+const TECH_VOCAB = [
+  "Java", "Spring Boot", "Spring Cloud", "MyBatis", "JVM", "并发",
+  "MySQL", "Redis", "Kafka", "RabbitMQ", "Elasticsearch", "MongoDB",
+  "Docker", "Kubernetes", "Nginx", "Linux", "gRPC", "ZooKeeper",
+  "Prometheus", "Grafana", "InfluxDB", "Milvus", "WebSocket", "JWT",
+  "MCP", "RAG", "LangChain", "向量检索", "Python", "Go", "C++",
+  "网络编程", "epoll", "Vue", "React", "Canvas"
+];
+
+/* 技术题题库：命中 token 就出这两道 */
+const IV_BANK = {
+  "java": [
+    ["Java 里你最常用的集合，ArrayList 和 LinkedList 在你们项目里怎么选？",
+     "按访问模式选。项目里设备列表、告警列表这类以遍历和随机读为主，用 ArrayList；LinkedList 只在频繁头尾插删且不随机访问时才划算，实际项目里很少用。HashMap 要注意扩容和哈希冲突，1.8 之后是数组+链表+红黑树，链表长度到 8 且容量到 64 才转树，不到 64 优先扩容。"],
+    ["线上出现 CPU 飙高，你怎么定位？",
+     "先 top -Hp 找线程，把线程 id 转 16 进制，再用 jstack 找对应栈；如果是 GC 引起，加 jstat -gcutil 看老年代增长和 Full GC 频率，必要时 dump 堆用 MAT 看大对象。多数情况是死循环、正则回溯或者频繁创建大对象，先定位到代码行再谈优化。"]
+  ],
+  "spring": [
+    ["Spring Boot 自动配置的原理，你们项目里怎么用过？",
+     "靠 @EnableAutoConfiguration 导入的 AutoConfigurationImportSelector 读取 META-INF 下的自动配置类，再按 @Conditional 系列注解决定是否生效。项目里用它接过自定义 starter，把静态分析客户端的超时、重试这些默认值做成 spring.xxx 配置项，业务侧只写配置不改代码。"],
+    ["事务失效你遇到过哪些情况？",
+     "常见三种：方法内部自调用绕过代理、异常被 catch 掉没抛出、抛的是受检异常但默认只回滚 RuntimeException。另外事务方法被同类调用、或者方法不是 public 也会失效。项目里改法是拆到另一个 Bean 里调用，并在 @Transactional 上显式写 rollbackFor。"],
+  ],
+  "mybatis": [
+    ["MyBatis 里 #{} 和 ${} 的区别，为什么不能滥用 ${}？",
+     "#{} 走预编译占位符，参数会被当成值；${} 是字符串拼接，直接进 SQL。用 ${} 传用户输入就是 SQL 注入。只有表名、排序字段这种不能预编译的位置才用 ${}，并且要在服务端做白名单校验，不能直接把前端参数塞进去。"],
+    ["分页插件和手写 limit 你怎么选？",
+     "单表简单分页手写 limit 更直观；多表关联、动态条件多的时候用 PageHelper 更省事。要注意深分页问题，limit 100000,20 会扫 10 万行，改成基于上一页最大 id 的游标分页（where id > ? order by id limit 20）性能稳定得多，这也是我在设备日志分页里改过的点。"]
+  ],
+  "mysql": [
+    ["慢查询怎么优化？说说你的排查顺序。",
+     "先开慢查询日志拿到具体 SQL，用 explain 看 type、key、rows 和 Extra。重点看有没有走索引、有没有 Using filesort 或 temporary。常见改法是补联合索引（注意最左前缀）、把函数运算挪出 where 条件、避免 select *、大偏移量改游标分页。改完再跑一次 explain 对比 rows。"],
+    ["分表之后跨分片查询怎么处理？",
+     "分三类：能带分片键的走单表；不能带的走冗余表或 ES 做查询侧；聚合统计走定时任务预聚合。我在操作日志分表里用的是按时间分表 + 查询必带时间范围，跨表的部分用 union 收敛到最近 N 张表，超过范围就落到归档表，避免全表扫描。"]
+  ],
+  "redis": [
+    ["缓存穿透、击穿、雪崩分别怎么处理？",
+     "穿透是查不存在的数据，用空值缓存加短 TTL 或布隆过滤器挡；击穿是热点 key 过期瞬间打满库，用逻辑过期 + 互斥重建；雪崩是同一时刻大批 key 失效，给 TTL 加随机抖动，并做多级缓存。我在设备信息缓存里用的是 Redisson 逻辑过期 + 随机 TTL，重建失败时返回旧值保证可用。"],
+    ["Redis 的 ZSET 底层是什么？什么时候会用跳表？",
+     "元素少的时候是 ziplist/listpack，超过阈值转 skiplist + dict。跳表查询 O(logN)、范围查询天然有序，比平衡树实现简单且并发友好。项目里周榜用 ZSET 存 score，ZREVRANGE 直接取前 N，比自己排序省事。"]
+  ],
+  "websocket": [
+    ["WebSocket 和长轮询比，好在哪？连接断了怎么办？",
+     "省掉重复的 HTTP 头，服务端可以主动推，延迟从秒级降到毫秒级。断线要靠心跳 + 重连：服务端定时 ping，客户端收到 close 或心跳超时后指数退避重连，重连后重新拉一次全量快照补齐断连期间的数据。nginx 反代要记得配 Upgrade 头和 proxy_read_timeout，否则 60 秒就被掐断。"],
+    ["多实例部署时，怎么让 A 机器上的消息推给连在 B 机器上的用户？",
+     "本地连接表只管本机，跨实例要走广播通道。我用 Redis Pub/Sub 做扇出：消息投到频道，各实例订阅后查本地连接表再下发；如果要求不丢，换成 Stream 加消费位点。注意 Pub/Sub 不持久化，实例掉线期间的消息会丢，这种场景就得上持久化方案。"]
+  ],
+  "jwt": [
+    ["JWT 怎么实现登出？无状态不是没法失效吗？",
+     "纯无状态确实没法主动失效，常见折中是加一层：黑名单（登出后把 jti 放进 Redis，TTL 设为 token 剩余时间）或版本号（用户表存 tokenVersion，登出 +1，校验时比对）。前者实现简单，后者不用存每个 token，只存版本，适合多端场景。"],
+    ["JWT 存哪里？XSS 和 CSRF 怎么权衡？",
+     "localStorage 方便但有 XSS 风险，httpOnly cookie 抗 XSS 但要做 CSRF 防护（SameSite + token 双提交）。管理后台这类内部系统我用 header + localStorage 并配合严格的 CSP；面向 C 端的更倾向 httpOnly cookie，把攻击面压在 CSRF 上，再用 SameSite=Lax 收敛。"]
+  ],
+  "mcp": [
+    ["MCP 是什么？为什么不直接给模型写 function call？",
+     "MCP 是模型和外部能力之间的通用协议：工具、资源、提示词都按统一 schema 描述，客户端只实现一次就能接任意 server。自己写 function call 的问题是每换一个客户端就要重写一遍对接，协议化的价值在于解耦。我用官方 Java SDK 把评审能力暴露成 6 个工具，SSE 端点能被任意 MCP 客户端挂载。"],
+    ["接入 MCP 时踩过什么坑？",
+     "最典型的是 JSON 层版本冲突：SDK 默认绑 Jackson 3（groupId 已改成 tools.jackson），而 Spring Boot 3 还是 Jackson 2，运行时抛 NoSuchFieldError: POJO，编译期完全看不出来。改成 mcp-core + mcp-json-jackson2 适配器就好了。另外 SSE 的 keepAlive 要配，否则中间代理会掐断空闲连接。"]
+  ],
+  "rag": [
+    ["RAG 的效果瓶颈在哪？你是怎么调的？",
+     "瓶颈八成在召回，不在生成。调的顺序是：先按文档结构切片（300-500 字、带重叠），再看 embedding 模型对中文技术文档的适配，最后调 Top-K 和相似度阈值。切太大语义被稀释，切太小丢上下文，这个平衡只能靠一批固定问题反复验证。"],
+    ["为什么不用微调？",
+     "微调适合改变输出风格和格式，不适合灌知识——知识会变，而且微调后依然会编。RAG 的答案可溯源，能给出引用片段，运维手册这类经常更新的文档用 RAG 维护成本低得多。真要做的话我更倾向微调 + RAG 组合，微调管说话方式，RAG 管事实。"]
+  ],
+  "milvus": [
+    ["向量检索的索引怎么选？",
+     "数据量小、要求高召回用 FLAT；十万到百万级常用 IVF_FLAT 或 HNSW，HNSW 查询快、内存占用高，IVF 要调 nlist 和 nprobe 平衡速度与召回。还要注意度量方式要和 embedding 训练时一致，用余弦相似度就别选 L2。项目里知识库切片量不大，用的是 HNSW + 余弦。"],
+    ["召回结果怎么评估好坏？",
+     "攒一批问题，人工标注应该命中的片段，算 recall@k 和 MRR。调 chunk 大小、重叠、Top-K 都拿同一批问题跑一遍对比。只看单条 case 的手感很容易被自己骗，我在切片从 1000 改到 400 的时候就是靠这批标注发现跨段引用被切断了。"]
+  ],
+  "influxdb": [
+    ["时序数据为什么不用 MySQL？",
+     "写入模型不一样。时序是 append-only、按时间范围聚合、要保留策略和降采样，MySQL 做这些要靠分区表加定时任务，写入放大明显。InfluxDB 按时间分片存储，Flux 直接写多时间窗聚合，还能配 retention 自动清理。代价是事务和关联查询弱，所以我把业务数据留在 MySQL，指标单独进 InfluxDB。"],
+    ["Flux 里怎么做多时间窗聚合？",
+     "用 aggregateWindow(every: 5m, fn: mean) 按窗口聚合，再 range 限定时间范围，最后 pivot 把不同 field 拼成一张表。要注意窗口边界对齐，否则前后两次查询的数字对不上；另外 every 窗口比 range 还大时会出现空洞，需要 fill(previous) 补。"]
+  ],
+  "prometheus": [
+    ["Prometheus 的四种指标类型分别什么时候用？",
+     "Counter 只增不减，适合请求数、错误数，查询用 rate；Gauge 可增可减，适合在线人数、队列长度；Histogram 按桶统计分布，能算分位数，适合接口耗时；Summary 在客户端算分位数，跨实例不能聚合。网关的 QPS 用 Counter，耗时用 Histogram，熔断状态用 Gauge。"],
+    ["为什么限流要用令牌桶而不是固定窗口？",
+     "固定窗口在窗口切换的瞬间可能放过两倍流量（临界问题）。令牌桶按恒定速率放令牌、允许一定突发，平滑得多；漏桶则是恒定输出速率，适合严格整形。网关里我用的是 golang.org/x/time/rate 的令牌桶，按 IP 单独维护，超限返回 429 并带 Retry-After。"]
+  ],
+  "限流": [
+    ["令牌桶和滑动窗口有什么区别？生产上怎么选？",
+     "令牌桶允许突发（桶容量决定突发上限），滑动窗口严格控制单位时间内的总量但实现要维护时间片。面向用户的 API 更适合令牌桶，体验平滑；对外计费或严格配额的场景用滑动窗口更公平。实现上单机用本地桶，集群要放 Redis 做原子扣减。"],
+    ["限流的 key 怎么设计？会不会误伤？",
+     "按 IP 最简单但会误伤同一出口 NAT 后的用户，按用户 ID 更准但要在鉴权之后。实际做法是分两层：全局按 IP 兜底防刷，业务按用户 ID 限速。还要注意白名单（健康检查、内网调用）和限流后的降级提示，别只返回一个 429 让前端猜。"]
+  ],
+  "熔断": [
+    ["熔断器的三个状态怎么流转？半开时要注意什么？",
+     "关闭态统计失败率，超过阈值转打开；打开态直接拒绝，等冷却时间后转半开；半开只放少量探测请求，成功则关闭、失败则重新打开。半开最容易写错的地方是放行数量——如果一次放全量，恢复瞬间就会把刚起来的服务再次打垮。我的实现是半开只放一个请求。"],
+    ["熔断和降级、限流的关系？",
+     "限流是入口控量，熔断是下游保护，降级是结果兜底。三者串起来是：限流挡住超额流量，熔断在下游连续失败时快速失败，降级给出兜底返回。只做限流不做熔断，下游挂了会拖死调用方；只做熔断不做降级，用户体验还是失败。"]
+  ],
+  "epoll": [
+    ["epoll 和 select 的区别？为什么电平触发和边缘触发要配不同的读法？",
+     "select 有 fd 数量上限且每次都要把集合拷进内核、O(n) 遍历；epoll 用红黑树注册、就绪链表返回，只看活跃连接。水平触发只要缓冲区还有数据就一直通知，可以只读一次；边缘触发只在状态变化时通知一次，必须循环读到 EAGAIN，否则剩下的数据再也不会通知。"],
+    ["Reactor 单线程 + 非阻塞 IO，写缓冲怎么处理？",
+     "写的时候先尝试直接 write，返回 EAGAIN 就把剩余数据挂到该连接的写缓冲，同时注册可写事件；可写事件触发后继续冲刷，直到写完再取消注册。要注意不能对同一连接并发写，否则会出现半包交错，所以写缓冲要按连接串行化，必要时加队列。"],
+  ],
+  "reactor": [
+    ["你的 Reactor 是怎么分层的？一次请求的生命周期是什么？",
+     "分三层：Poller 屏蔽 epoll/WSAPoll 差异，EventLoop 负责事件循环与分发，Connection 持有读缓冲和写缓冲。一次请求的生命周期是：可读事件 → 读进缓冲 → 解析出完整报文 → 业务处理 → 结果写入写缓冲 → 注册可写事件 → 冲刷发送。解析不完整就留在缓冲里等下一次读。"],
+    ["单线程 Reactor 的瓶颈在哪？怎么扩展？",
+     "瓶颈在业务处理，IO 本身不是瓶颈。扩展方向是主从 Reactor：主线程只负责 accept，把连接分给多个 IO 线程，每个线程一个事件循环，业务再丢到线程池。代价是要处理跨线程投递和连接归属，复杂度明显上升，量级没到之前单线程加多进程更划算。"]
+  ],
+  "c++": [
+    ["RAII 解决什么问题？移动语义和拷贝的区别？",
+     "RAII 把资源生命周期绑在对象上，构造获取、析构释放，异常安全天然成立。移动语义是转移资源所有权，把指针搬走而不是深拷贝，代价从 O(n) 降到 O(1)；被移动的对象要置成有效但未指定的状态。项目里网络缓冲、连接对象都用移动构造避免整块内存复制。"],
+    ["shared_ptr 循环引用怎么发现？weak_ptr 怎么用？",
+     "两个对象互相持有 shared_ptr，引用计数永远不归零，内存泄漏且析构不执行。破环方式是一端改 weak_ptr，用之前 lock() 提升成 shared_ptr 并判空。设计上要明确所有权：父子关系里父持有子，子只观察父。"]
+  ],
+  "linux": [
+    ["排查一个服务响应慢，你会看哪些指标？",
+     "先看负载和 CPU（top/uptime），再区分是计算密集还是 IO 等待；iostat 看磁盘 util 和 await，free 看内存与 swap，ss 看连接数和 TIME_WAIT；应用侧看 GC 日志和慢查询。定位到层之后再往下钻，别一上来就翻代码。"],
+    ["TIME_WAIT 太多是什么原因？怎么处理？",
+     "主动关闭方会进入 TIME_WAIT 并保持 2MSL，短连接多的时候会堆积。处理方式：改成连接复用（长连接/连接池），内核参数调 tcp_tw_reuse，或降低 tcp_fin_timeout。根本上还是减少短连接，参数只是缓解。"]
+  ],
+  "python": [
+    ["测试框架为什么用 YAML 描述用例，而不是直接写 Python？",
+     "用例和代码解耦，写用例的人不需要懂框架内部；同时 YAML 天然是数据，方便做参数化和批量生成。代价是表达能力弱，复杂断言还是要落到代码里，所以我的设计是 YAML 负责流程和断言，钩子和扩展函数用 Python 注册。"],
+    ["变量插值和断言，你做的时候踩了什么坑？",
+     "一开始断言里的 ${var} 没做插值，导致期望值永远是字面量字符串，用例全绿但根本没校验。后来把插值统一放在取值阶段，断言只吃已解析的值。另一个坑是 JSONPath 对数组下标支持，a.0.b 这种写法一开始解析不了，改成先按点切再判断数字索引。"]
+  ],
+  "go": [
+    ["Go 的 GMP 模型解决了什么问题？",
+     "解决大量 goroutine 的调度开销。G 是协程，M 是系统线程，P 是调度上下文；P 的数量默认等于 CPU 核数，M 必须绑定 P 才能跑 G。这样几万个 goroutine 只用少量线程，阻塞的系统调用会触发 M 与 P 解绑，避免拖住整个调度器。"],
+    ["Go 的 panic 和 error 怎么分工？",
+     "error 是可预期的失败，用返回值逐层处理；panic 是程序 bug 或不可恢复状态。框架层要 recover 兜底，防止一个请求把进程带崩，但不能用 recover 当错误处理。网关里我在中间件最外层 recover，转成 500 并记录堆栈。"]
+  ],
+  "canvas": [
+    ["Canvas 动画怎么保证不掉帧？",
+     "requestAnimationFrame 驱动，逻辑和渲染分离；避免每帧创建对象，复用数组和 Path；把静态层缓存成离屏 canvas，只重绘变化区域。还要处理 devicePixelRatio，画布尺寸按物理像素设、坐标按逻辑像素算，否则高分屏会模糊或者坐标翻倍。"],
+    ["手部关键点检测放在浏览器里跑，性能怎么保证？",
+     "MediaPipe 的 WASM 推理在本地，不上传视频，隐私和延迟都好。优化点是降分辨率、限制检测频率（比如每两帧一次）、检测与渲染解耦，用最近一次结果插值。掉帧时优先保证音频响应，视觉可以降级。"]
+  ],
+  "audio": [
+    ["Web Audio 里怎么做出不刺耳的音色？",
+     "振荡器叠加 + ADSR 包络，起音和释音要短但不能突跳，否则有爆音；音高量化到五声音阶，任意手势落点都在调内，听起来不会跑调。再挂一个低通滤波和轻混响，把方波的毛刺磨掉。"]
+  ]
+};
+
+function stripHtml(s) { return String(s == null ? "" : s).replace(/<[^>]+>/g, "").trim(); }
+
+/* ---------- 评估 ---------- */
+function evalDims() {
+  const picked = state.selected.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean);
+  const jd = (state.jd || "").toLowerCase();
+  const skills = currentSkills().map(stripHtml);
+  const resumeText = (skills.join(" ") + " " + picked.map(p =>
+    [p.name, p.stack, p.desc, ...p.bullets.map(b => stripHtml(b))].join(" ")).join(" ")).toLowerCase();
+
+  const ds = state.analysis.dirScore || {};
+  const dirSum = Object.values(ds).reduce((a, b) => a + b, 0);
+
+  // 1 岗位匹配
+  let tagTotal = 0, tagHit = 0;
+  picked.forEach(p => p.tags.forEach(t => { tagTotal++; if (jd && kwHit(jd, t)) tagHit++; }));
+  const tagRate = tagTotal ? tagHit / tagTotal : 0;
+  const intentTerms = String(PROFILE.intent || "").toLowerCase()
+    .split(/[\s\/、·]+/).filter(t => t.length >= 2 && !/工程师$|开发$/.test(t));
+  const intentHit = jd && intentTerms.some(t => kwHit(jd, t)) ? 1 : 0;
+  const d1 = Math.round(Math.min(1, dirSum / 8) * 40 + tagRate * 40 + intentHit * 20);
+
+  // 2 项目相关度
+  const scores = picked.map(p => scoreProject(p, state.analysis).score);
+  const d2 = scores.length ? Math.round(Math.min(1, (scores.reduce((a, b) => a + b, 0) / scores.length) / 40) * 100) : 0;
+
+  // 3 技能覆盖：JD 提到的技术词有多少出现在简历上
+  const jdTech = TECH_VOCAB.filter(t => jd && kwHit(jd, t.toLowerCase()));
+  const covered = jdTech.filter(t => kwHit(resumeText, t.toLowerCase()));
+  const d3 = jdTech.length ? Math.round(covered.length / jdTech.length * 100) : 50;
+
+  // 4 成果量化
+  const bullets = [];
+  picked.forEach(p => {
+    const ov = state.overrides[p.id] || {};
+    p.bullets.forEach((b, i) => bullets.push(stripHtml(ov["b" + i] != null ? ov["b" + i] : b)));
+  });
+  const quant = bullets.filter(b => /\d/.test(b) &&
+    /(ms|QPS|%|倍|个|条|万|次|行|秒|分钟|核|并发|MB|GB|KB|TPS)/i.test(b)).length;
+  const quantRate = bullets.length ? quant / bullets.length : 0;
+  const d4 = Math.round(Math.min(1, quantRate / 0.4) * 100);
+
+  // 5 项目深度
+  const depth = picked.map(p => {
+    const n = p.bullets.length;
+    const text = p.bullets.map(stripHtml).join(" ");
+    let s = n >= 3 ? 50 : n * 16;
+    if (/(实现|设计|抽象|重构|优化|排查|合并|拆分|降级|兜底)/.test(text)) s += 25;
+    if (/\d/.test(text)) s += 25;
+    return Math.min(100, s);
+  });
+  const d5 = depth.length ? Math.round(depth.reduce((a, b) => a + b, 0) / depth.length) : 0;
+
+  // 6 版面规范
+  const paperText = stripHtml(document.getElementById("paper").innerText || "");
+  const totalChars = paperText.length;
+  let d6 = 0;
+  if (picked.length >= 2 && picked.length <= 3) d6 += 30;
+  if (totalChars >= 700 && totalChars <= 1600) d6 += 30;
+  if (skills.length >= 4 && skills.length <= 5) d6 += 20;
+  if (quantRate > 0.2) d6 += 20;
+
+  return [
+    { key: "match", name: "岗位匹配度", w: 30, score: clamp(d1), note: tagHit ? `所选项目命中 JD 关键词 ${tagHit}/${tagTotal} 个，方向信号 ${dirSum} 分` : "JD 与项目几乎没有交集" },
+    { key: "project", name: "项目相关度", w: 20, score: clamp(d2), note: picked.length ? `所选项目与 JD 的平均相关分 ${Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)}` : "还没有选项目" },
+    { key: "skill", name: "技能覆盖", w: 15, score: clamp(d3), note: jdTech.length ? `JD 提到 ${jdTech.length} 个技术词，简历覆盖 ${covered.length} 个` : "JD 里没识别到具体技术词" },
+    { key: "quant", name: "成果量化", w: 15, score: clamp(d4), note: `${bullets.length} 条要点里 ${quant} 条带具体指标` },
+    { key: "depth", name: "项目深度", w: 10, score: clamp(d5), note: "看要点数量、是否讲清做法、有没有结果" },
+    { key: "layout", name: "版面规范", w: 10, score: clamp(d6), note: `${picked.length} 个项目、正文约 ${totalChars} 字、技能 ${skills.length} 行` }
+  ];
+}
+
+function clamp(n) { return Math.max(0, Math.min(100, Math.round(n))); }
+
+function evalAdvice(dims) {
+  const out = [];
+  const by = k => dims.find(d => d.key === k);
+  if (by("match").score < 60) out.push("意向和项目跟 JD 对不太上：换一段更贴的 JD，或在项目要点里补上 JD 里的技术词（不用编，把实际做过的换个说法）。");
+  if (by("skill").score < 70) {
+    const jd = (state.jd || "").toLowerCase();
+    const miss = TECH_VOCAB.filter(t => jd && kwHit(jd, t.toLowerCase()) &&
+      !kwHit(currentSkills().map(stripHtml).join(" ").toLowerCase(), t.toLowerCase()));
+    if (miss.length) out.push("JD 提到但技能行没体现：" + miss.slice(0, 6).join("、") + "。做过的就补进去，没做过的别硬写——面试一问就露。");
+  }
+  if (by("quant").score < 60) out.push("要点缺结果：把「实现了 X」改成「X 把 A 从 240ms 降到 90ms」这种，哪怕只有一个数字，说服力也完全不同。");
+  if (by("depth").score < 70) out.push("项目讲得偏浅：每个项目至少留 3 条要点，一条讲做法、一条讲难点、一条讲结果。");
+  if (by("layout").score < 70) out.push("版面：项目控制在 2-3 个、技能 4-5 行、正文 700-1600 字，现在偏长或偏短。");
+  if (!state.jd) out.push("还没粘 JD，匹配度是按空 JD 算的，先粘一段再评估。");
+  return out;
+}
+
+/* ---------- 题库 ---------- */
+function techQuestions() {
+  const picked = state.selected.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean);
+  const out = [];
+  const used = new Set();
+
+  for (const p of picked) {
+    const tokens = new Set();
+    const raw = (p.stack + " " + p.tags.join(" ") + " " + p.skills.map(x => x[1]).join(" ")).toLowerCase();
+    Object.keys(IV_BANK).forEach(k => { if (kwHit(raw, k)) tokens.add(k); });
+    for (const k of [...tokens].slice(0, 3)) {
+      const pair = IV_BANK[k];
+      const key = "tech:" + k;
+      if (used.has(key)) continue;
+      used.add(key);
+      pair.forEach((qa, i) => out.push({
+        id: "tech:" + k + ":" + i, cat: "tech", tag: k,
+        q: qa[0], a: qa[1], from: p.name
+      }));
+    }
+  }
+  return out;
+}
+
+function projectQuestions() {
+  const picked = state.selected.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean);
+  const out = [];
+  picked.forEach(p => {
+    const ov = state.overrides[p.id] || {};
+    const bs = p.bullets.map((b, i) => stripHtml(ov["b" + i] != null ? ov["b" + i] : b));
+    const desc = stripHtml(ov.desc != null ? ov.desc : p.desc);
+    const hard = bs.find(b => /(难|坑|冲突|超时|并发|性能|瓶颈|降级|容错|排查)/.test(b)) || bs[0] || desc;
+    const metric = bs.find(b => /\d/.test(b)) || "";
+    const io = bs.find(b => /(IO|网络|协议|连接|存储|缓存|索引)/i.test(b)) || bs[1] || "";
+
+    out.push(
+      {
+        id: "proj:" + p.id + ":0", cat: "proj", tag: p.name,
+        q: `《${p.name}》里你负责的部分，最难的一点是什么？怎么解决的？`,
+        a: `最难的是这一块：${hard} 当时没有现成方案，我是先把现象固定下来（能稳定复现），再二分定位到具体环节，最后才定方案。改完用${metric ? "同一组压测数据对比：" + metric : "同一批用例回归，确认没有把别的路径改坏"}。`
+      },
+      {
+        id: "proj:" + p.id + ":1", cat: "proj", tag: p.name,
+        q: `《${p.name}》为什么选这套技术栈？换个方案行不行？`,
+        a: `技术栈是 ${p.stack}，选型主要看三点：团队熟悉度、和现有系统的集成成本、这套方案在目标量级下够不够用。${desc} 换方案当然可以，但要付出迁移和验证的成本，比如把存储层换掉意味着索引、事务、备份策略都要重做——除非现有方案已经顶到瓶颈，否则不划算。`
+      },
+      {
+        id: "proj:" + p.id + ":2", cat: "proj", tag: p.name,
+        q: `如果《${p.name}》的请求量或数据量涨 10 倍，哪里最先出问题？`,
+        a: `${io ? "最先撑不住的是这一层：" + io + " " : ""}顺序大概是：单实例的 CPU 或连接数先打满，然后是存储的写入与查询压力，最后是下游依赖的超时放大。对应的做法是先把无状态部分水平扩容，再加缓存和读写分离，把写路径异步化；容量上要提前压测出拐点，而不是等线上报警。`
+      },
+      {
+        id: "proj:" + p.id + ":3", cat: "proj", tag: p.name,
+        q: `《${p.name}》这块怎么保证正确性？出了问题怎么发现？`,
+        a: `三层：编码阶段用固定用例把边界覆盖住，关键路径写断言；运行阶段靠指标和日志（耗时、错误率、异常栈带上上下文），异常要能被监控抓到而不是等人反馈；改动之后拿同一批用例做回归，确认没有变差。这个项目里我还特意标了数据来源，出问题能立刻判断是哪一层失效。`
+      }
+    );
+  });
+  return out;
+}
+
+function hrQuestions() {
+  const picked = state.selected.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean);
+  const names = picked.map(p => p.name);
+  const first = names[0] || "最近做的项目";
+  const second = names[1] || first;
+  const intent = PROFILE.intent || "这个方向";
+  const jd = (state.jd || "").trim();
+  const jdLine = jd ? `JD 里提到的 ${TECH_VOCAB.filter(t => kwHit(jd.toLowerCase(), t.toLowerCase())).slice(0, 4).join("、") || "这些能力"} 正好是我在做的事情。` : "";
+
+  return [
+    { id: "hr:0", cat: "hr", q: "简单介绍一下你自己。",
+      a: `我是${PROFILE.edu.school || "（学校）"}${PROFILE.edu.major || ""}专业${PROFILE.edu.degree || "本科"}，${/(\d{4})/.exec(PROFILE.edu.period || "") ? (Math.max(...(PROFILE.edu.period.match(/(19|20)\d{2}/g) || ["2027"]).map(Number))) + " 届" : "应届"}。技术上主要在做 ${intent} 方向，最近两个项目是《${first}》和《${second}》，一个是把能力做成可被外部调用的服务，一个是端到端的完整系统。${jdLine}我习惯把问题定位到具体环节再动手，不太喜欢靠猜。` },
+    { id: "hr:1", cat: "hr", q: "为什么投这个岗位？",
+      a: `一是方向一致，我在做的正好是岗位要的这类事；二是这个岗位能接触到${jd ? "JD 里写的这些场景" : "更完整的业务链路"}，比我现在自己一个人做项目能看到更多真实约束。${jdLine}` },
+    { id: "hr:2", cat: "hr", q: "你最有成就感的一个项目是哪个？",
+      a: `《${first}》。它一开始只是个能跑的 demo，后来我把${picked[0] ? "「" + stripHtml(picked[0].bullets[0] || "").slice(0, 40) + "…」" : "核心链路"}这段做透了，才真正理解设计取舍。成就感不来自功能多，而来自我能解释清楚每个决定为什么这么定。` },
+    { id: "hr:3", cat: "hr", q: "讲一个你踩过的坑，怎么解决的？",
+      a: `印象最深的一次是编译打包全绿、启动也正常，第一个请求进来就 500，报的是 NoSuchFieldError——典型的运行时版本冲突：SDK 绑了新版本 JSON 库，主框架还是老版本，字节码不兼容。定位方式是看依赖树，把冲突的那层替换掉就好了。这件事之后我养成了接新 SDK 先看依赖树的习惯。` },
+    { id: "hr:4", cat: "hr", q: "你的优点和缺点分别是什么？",
+      a: `优点是愿意往下钻，遇到说不清的现象会一直查到根因，不太接受「大概是缓存问题」这种结论。缺点是前期容易在细节上花太多时间，比如为了一个 2ms 的差异反复压测。现在的做法是先定验收标准，达到就先交付，把优化记进待办。` },
+    { id: "hr:5", cat: "hr", q: "团队协作中遇到分歧怎么处理？",
+      a: `先对齐目标，再看分歧是不是在同一层：很多时候争的是实现，目标其实一致。目标一致就用数据说话——压测结果、维护成本、改动范围，摆出来通常能收敛。如果还是不行，就按负责人拍板执行，但把风险写进文档，后面复盘有据可查。` },
+    { id: "hr:6", cat: "hr", q: "未来三年的规划？",
+      a: `一到两年把${intent}这条线做深，能独立负责一个模块从设计到上线；两到三年往系统设计走，能判断一个方案在什么量级下会失效、提前留好扩展点。不太想只停在会调 API 的层面。` },
+    { id: "hr:7", cat: "hr", q: "你还有什么想问我们的？",
+      a: `三个问题：这个岗位现在最急需解决的问题是什么；团队的技术决策是怎么定的，有没有评审机制；我入职后前三个月，你们希望我做到什么程度算合格。` }
+  ];
+}
+
+function allQuestions() {
+  return [...techQuestions(), ...projectQuestions(), ...hrQuestions(), ...(IV.ai || [])];
+}
+
+/* ---------- 渲染 ---------- */
+function ivScoreOf(dims) {
+  return Math.round(dims.reduce((a, d) => a + d.score * d.w, 0) / dims.reduce((a, d) => a + d.w, 0));
+}
+
+function renderInterview() {
+  const dims = evalDims();
+  const total = ivScoreOf(dims);
+
+  const scoreEl = document.getElementById("ivScore");
+  scoreEl.textContent = total;
+  document.getElementById("ivScoreNote").textContent =
+    total >= 80 ? " · 可以直接投" : total >= 65 ? " · 改几处更好" : " · 建议先补强";
+
+  // 左栏
+  const bars = dims.map(d => {
+    const cls = d.score >= 75 ? "" : d.score >= 55 ? " warn" : " bad";
+    return `<div class="dim">
+      <div class="dim-top"><span>${d.name} · 权重 ${d.w}%</span><b>${d.score}</b></div>
+      <div class="dim-bar"><i class="${cls}" style="width:${d.score}%"></i></div>
+      <div class="dim-note">${d.note}</div>
+    </div>`;
+  }).join("");
+
+  const advice = evalAdvice(dims);
+  const adviceHtml = advice.length
+    ? `<ul class="dim-note" style="padding-left:16px;margin:0">${advice.map(a => `<li style="margin-bottom:6px">${a}</li>`).join("")}</ul>`
+    : `<div class="dim-note">各维度都还行，重点准备下面题库里的项目追问。</div>`;
+
+  document.getElementById("ivLeft").innerHTML =
+    `<div class="iv-sub">评分维度</div>${bars}
+     <div class="iv-sub">还能怎么改</div>${adviceHtml}`;
+
+  // 右栏 tabs
+  const qs = allQuestions();
+  const cats = [
+    ["tech", "技术栈题", qs.filter(q => q.cat === "tech").length],
+    ["proj", "项目题", qs.filter(q => q.cat === "proj").length],
+    ["hr", "高频题", qs.filter(q => q.cat === "hr").length],
+    ["ai", "AI 补充", (IV.ai || []).length]
+  ];
+  document.getElementById("ivTabs").innerHTML = cats.map(([k, label, n]) =>
+    `<button class="tab${IV.tab === k ? " on" : ""}" data-tab="${k}">${label} ${n}</button>`).join("");
+
+  const list = qs.filter(q => q.cat === IV.tab);
+  const box = document.getElementById("ivList");
+  if (!list.length) {
+    box.innerHTML = `<div class="iv-empty">${IV.tab === "ai"
+      ? (IV.aiMsg || "还没补充。点右上角「用 AI 补充题目」，按这份简历和 JD 出更贴的追问。")
+      : "这一类暂时没有题目。"}</div>`;
+    return;
+  }
+  box.innerHTML = list.map((q, i) => {
+    const ans = IV.answers[q.id] != null ? IV.answers[q.id] : q.a;
+    return `<div class="qa">
+      <div class="qa-q"><span class="idx">${String(i + 1).padStart(2, "0")}</span>
+        <span>${q.q}</span>
+        ${q.tag ? `<span class="qa-tag">${q.tag}</span>` : ""}</div>
+      <div class="qa-a" contenteditable="true" data-qid="${q.id}">${ans}</div>
+      <div class="qa-tools">答案可以直接改，改完自动保存 ·
+        <a href="#" data-reset="${q.id}">恢复默认</a></div>
+    </div>`;
+  }).join("");
+}
+
+function openInterview() {
+  document.getElementById("ivOverlay").classList.add("on");
+  renderInterview();
+}
+
+/* 评估面板事件 */
+document.getElementById("btnIv").onclick = openInterview;
+document.getElementById("ivClose").onclick = () => document.getElementById("ivOverlay").classList.remove("on");
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") document.getElementById("ivOverlay").classList.remove("on");
+});
+document.getElementById("ivOverlay").addEventListener("click", (e) => {
+  if (e.target.id === "ivOverlay") e.currentTarget.classList.remove("on");
+  const tab = e.target.closest("[data-tab]");
+  if (tab) { IV.tab = tab.dataset.tab; renderInterview(); }
+  const reset = e.target.closest("[data-reset]");
+  if (reset) {
+    e.preventDefault();
+    delete IV.answers[reset.dataset.reset];
+    LS.set("resume.answers", IV.answers);
+    renderInterview();
+  }
+});
+document.addEventListener("input", (e) => {
+  const qa = e.target.closest("[data-qid]");
+  if (!qa) return;
+  IV.answers[qa.dataset.qid] = qa.innerHTML;
+  LS.set("resume.answers", IV.answers);
+});
+
+document.getElementById("ivAi").onclick = async () => {
+  const btn = document.getElementById("ivAi");
+  if (!aiReady()) {
+    IV.aiMsg = "先在上方「AI 分析」里配好接口地址、模型和密钥。";
+    IV.tab = "ai"; renderInterview(); return;
+  }
+  btn.disabled = true; btn.textContent = "生成中…";
+  IV.aiMsg = "生成中…"; IV.tab = "ai"; renderInterview();
+
+  const picked = state.selected.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean);
+  const resume = [
+    "求职意向：" + PROFILE.intent,
+    "技能：" + currentSkills().map(stripHtml).join("；"),
+    ...picked.map(p => `项目《${p.name}》（${p.stack}）：${stripHtml(p.desc)} ` + p.bullets.map(stripHtml).join("；"))
+  ].join("\n");
+
+  const sys = "你是技术面试官。根据候选人的简历和岗位 JD，出 8 道最可能被追问的技术细节问题。"
+    + "要求：只围绕简历里写到的技术，不要问简历里没有的；每题给一段 3-5 句的参考回答，第一人称、具体、不说套话。"
+    + "只返回 JSON：{\"items\":[{\"cat\":\"项目或技术\",\"q\":\"问题\",\"a\":\"参考回答\"}]}";
+  const user = "岗位 JD：\n" + (state.jd || "（未提供，按简历方向出题）").slice(0, 2000)
+    + "\n\n简历：\n" + resume.slice(0, 4000);
+
+  const parseItems = (data) => {
+    let text = (data.choices && data.choices[0] && data.choices[0].message
+      && data.choices[0].message.content) || "";
+    if (Array.isArray(text)) text = text.map(t => t.text || "").join("");
+    const str = String(text);
+    const a = str.indexOf("{"), b = str.lastIndexOf("}");
+    if (a < 0 || b <= a) return null;
+    let obj = null;
+    try { obj = JSON.parse(str.slice(a, b + 1)); } catch (_) { return null; }
+    const items = (obj.items || []).filter(x => x && x.q);
+    return items.length ? items : null;
+  };
+
+  const r = await aiAsk([{ role: "system", content: sys }, { role: "user", content: user }], parseItems);
+  btn.disabled = false; btn.textContent = "用 AI 补充题目";
+
+  if (!r.ok) { IV.aiMsg = "生成失败：" + r.err; renderInterview(); return; }
+
+  IV.ai = r.map.map((x, i) => ({
+    id: "ai:" + i, cat: "ai",
+    q: String(x.q || "").trim(),
+    a: String(x.a || "").trim(),
+    tag: x.cat || "AI"
+  }));
+  LS.set("resume.iv.ai", IV.ai);
+  IV.aiMsg = "";
+  renderInterview();
+};
+
+/* 导出成 Word：评估表 + 全部题目与答案 */
+document.getElementById("ivExport").onclick = () => {
+  const dims = evalDims();
+  const total = ivScoreOf(dims);
+  const qs = allQuestions();
+  const cats = [["tech", "技术栈题"], ["proj", "项目题"], ["hr", "高频题"], ["ai", "AI 补充"]];
+
+  const dimRows = dims.map(d =>
+    `<tr><td>${d.name}</td><td>${d.w}%</td><td>${d.score}</td><td>${d.note}</td></tr>`).join("");
+  const advice = evalAdvice(dims).map(a => `<li>${a}</li>`).join("");
+
+  const groups = cats.map(([k, label]) => {
+    const list = qs.filter(q => q.cat === k);
+    if (!list.length) return "";
+    const items = list.map((q, i) => {
+      const a = IV.answers[q.id] != null ? IV.answers[q.id] : q.a;
+      return `<p style="margin:10pt 0 3pt"><b>${i + 1}. ${q.q}</b></p>
+        <p style="margin:0 0 0 14pt;color:#333">${a}</p>`;
+    }).join("");
+    return `<h2>${label}</h2>${items}`;
+  }).join("");
+
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+    xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>面试准备</title>
+<style>
+@page { size: A4; margin: 1.8cm 1.8cm; }
+body { font-family: "Microsoft YaHei"; font-size: 10.5pt; line-height: 1.75; color: #1a1a1a; }
+h1 { font-size: 18pt; margin: 0 0 4pt; }
+h2 { font-size: 12.5pt; margin: 16pt 0 6pt; border-bottom: 1px solid #ccc; padding-bottom: 3pt; }
+table { border-collapse: collapse; width: 100%; font-size: 9.5pt; margin-bottom: 10pt; }
+th, td { border: 1px solid #cbd5e1; padding: 5pt 7pt; text-align: left; }
+th { background: #f1f5f9; }
+.muted { color: #555; font-size: 9.5pt; }
+</style></head><body>
+<h1>面试准备：${stripHtml(PROFILE.intent || "通用")}</h1>
+<p class="muted">综合评分 ${total} 分 · 生成于 ${new Date().toLocaleDateString("zh-CN")}</p>
+<h2>评分维度</h2>
+<table><tr><th>维度</th><th>权重</th><th>得分</th><th>说明</th></tr>${dimRows}</table>
+<h2>还能怎么改</h2><ul class="muted">${advice || "<li>各维度都还行。</li>"}</ul>
+${groups}
+</body></html>`;
+
+  download(new Blob(["\ufeff", html], { type: "application/msword" }),
+    `面试准备-${(PROFILE.intent || "通用").replace(/[\s\/]/g, "")}.doc`);
 };
 
 /* 初始化：上次填过的 JD、选中的项目都会恢复，不用重新粘一遍。
