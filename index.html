@@ -877,25 +877,27 @@ const PROJECTS = [
     ]
   },
   {
-    id: "gesture-music",
-    url: "https://github.com/Cixuy/gesture-music",
-    name: "手势音乐盒",
-    role: "独立开发", period: "2026/09 - 2026/10",
-    direction: ["frontend", "backend"], distinct: 1.0,
-    tags: ["web", "canvas", "websocket", "redis", "实时", "音频", "前端", "spring boot",
-           "pub/sub", "长连接"],
-    stack: "MediaPipe + Web Audio + Canvas + Spring Boot + Redis",
+    id: "a2a-agent-hub",
+    url: "https://github.com/Cixuy/a2a-agent-hub",
+    name: "A2A 智能体协作网关",
+    role: "独立开发", period: "2026/11 - 2026/11",
+    direction: ["ai", "go", "backend"], distinct: 1.0,
+    tags: ["a2a", "agent", "智能体", "多智能体", "json-rpc", "sse", "流式", "go", "golang",
+           "网关", "编排", "幂等", "配额", "限流", "审计", "可观测", "协议", "mcp"],
+    stack: "Go 1.27 + net/http（零第三方依赖）+ JSON-RPC + SSE",
     skills: [
-      ["前端", "Canvas 2D"], ["前端", "MediaPipe（浏览器内推理）"],
-      ["音频", "Web Audio（ADSR 合成）"], ["系统", "WebSocket（房间）"],
-      ["系统", "Redis（Pub/Sub）"], ["存储", "MySQL"], ["存储", "Redis（ZSET 榜）"]
+      ["语言", "Go（goroutine、channel）"], ["AI", "A2A（协议实现）"],
+      ["AI", "Agent Card（能力发现）"], ["AI", "多 Agent 编排"],
+      ["服务治理", "幂等（messageId）"], ["服务治理", "配额（令牌桶）"],
+      ["可观测", "跨 Agent 审计"], ["系统", "SSE（流式回传）"],
+      ["工程", "状态机与断点恢复"], ["工程", "原子落盘"]
     ],
-    desc: "浏览器内手部识别驱动发声的互动应用，支持多人同房间合奏。",
+    desc: "把一句话拆给多个专职 Agent 协作：按能力发现路由、按配额限流、按跳级审计，任务状态落盘可重启续跑。",
     bullets: [
-      "<b>浏览器内推理</b>：MediaPipe 手部关键点检测跑在本地 WASM，不依赖云端；检测与渲染解耦",
-      "<b>实时合成</b>：Web Audio 振荡器叠加 ADSR 包络发声，音高量化到五声音阶，任意手势都不刺耳",
-      "<b>房间广播</b>：WebSocket 只同步音符事件而非坐标，服务端经 Redis Pub/Sub 扇出，多实例仍能互相听到",
-      "<b>记录与榜单</b>：演奏明细入 MySQL，周榜用 Redis ZSET 维护，在线人数用 Set 跨实例共享"
+      "<b>A2A 协议实现</b>：用标准库实现 Agent Card 发现、JSON-RPC 的 message/send 与 tasks/get、SSE 任务流；三个下游 Agent 独立进程独立端口，真实 HTTP 调用而非进程内函数",
+      "<b>能力路由与编排</b>：按现象判意图决定调用链（设备类走诊断→知识库，账号类走知识库→工单），任一跳失败不影响其余跳，任务标记为部分降级完成",
+      "<b>治理三件套</b>：messageId 幂等（索引随任务落盘，重复提交不重复建单）、每 Agent 独立令牌桶配额、单跳 1.2s 超时并重试一次，配额拒绝不重试",
+      "<b>可观测与恢复</b>：每次跨调用记录 hop（agent/技能/耗时/尝试次数/产出）并渲染成瀑布；任务状态原子写盘，进程被 kill 后重启任务与幂等索引全部恢复"
     ]
   },
   {
@@ -1052,9 +1054,9 @@ function scoreProject(proj, analysis) {
   let raw = (hitCount * 3 + dirBonus) * (proj.distinct || 1);
 
   // 主方向跟 JD 完全不对口时压一档，避免靠顺手命中两个通用词挤上来
-  const main = proj.direction[0];
   const jdHasDir = Object.values(analysis.dirScore || {}).some(n => n > 0);
-  if (main && jdHasDir && !(analysis.dirScore[main] > 0)) raw *= 0.6;
+  const anyDirHit = proj.direction.some(d => analysis.dirScore[d] > 0);
+  if (jdHasDir && !anyDirHit) raw *= 0.6;
   // 一个标签都没命中，说明这个 JD 压根没提它做过的事，不能只靠方向分排上来
   if (!hitCount && jdHasDir) raw *= 0.4;
 
