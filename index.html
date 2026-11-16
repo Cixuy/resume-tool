@@ -212,6 +212,29 @@
   .app-tools a { color: var(--muted); }
   .app-tools a:hover { color: var(--accent); }
   .app-empty { font-size: 12px; color: var(--muted); padding: 10px 0; }
+
+  /* 复盘页 */
+  body[data-view="rv"] .layout { display: none; }
+  body[data-view="rv"] .actions { display: none; }
+  .rv { display: none; grid-template-columns: 380px minmax(0, 1fr); gap: 20px;
+        padding: 20px 24px 60px; align-items: start; }
+  body[data-view="rv"] .rv { display: grid; }
+  .rv-list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow: auto; }
+  .drill-q { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: #fcfcfd; }
+  .drill-num { font-size: 11px; color: var(--faint); margin-bottom: 6px; }
+  .drill-text { font-size: 14px; font-weight: 600; line-height: 1.6; }
+  .drill-a { margin-top: 10px; font-size: 13px; line-height: 1.75; color: #374151;
+             border-left: 2px solid var(--accent); padding-left: 10px; }
+  .wrong-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
+                max-height: 260px; overflow: auto; }
+  .wrong-item { border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; }
+  .wrong-q { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px;
+             line-height: 1.6; margin: 0; color: var(--text); }
+  .wrong-q input { margin-top: 3px; }
+  .wrong-item.done .wrong-q span { color: var(--faint); text-decoration: line-through; }
+  .wrong-meta { font-size: 11px; color: var(--faint); margin: 4px 0 0 22px; }
+  .wrong-meta a { margin-left: 8px; color: var(--muted); }
+  @media print { .rv { display: none !important; } }
   .hint { font-size: 11px; color: var(--muted); line-height: 1.7; }
   .warn { color: #b45309; }
 
@@ -291,6 +314,7 @@
   <div class="viewnav" id="viewNav">
     <button data-view="resume" class="on">简历</button>
     <button data-view="mj">面经</button>
+    <button data-view="rv">复盘</button>
   </div>
   <div class="actions">
     <button id="btnSample" class="mini">示例 JD</button>
@@ -374,6 +398,82 @@
           <button class="mini" id="e_del">删除</button>
           <button class="mini" id="e_md">复制为 Markdown</button>
           <span class="hint" id="e_msg"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="rv" id="viewRv">
+    <div>
+      <div class="panel">
+        <h2>模拟预演 <em id="drillState">未开始</em></h2>
+        <div class="hint">
+          从简历题库里随机抽 8 题，逐题自评。答不上的会进错题本，之后反复刷。
+        </div>
+        <div id="drillBox" style="margin-top:10px"></div>
+      </div>
+
+      <div class="panel">
+        <h2>错题本 <em id="wrongCount">0 题</em></h2>
+        <div class="hint">来自复盘的「答得不好」和预演里标了「不会」的题。勾掉表示已经掌握。</div>
+        <div class="wrong-list" id="wrongList"></div>
+      </div>
+
+      <div class="panel">
+        <h2>复盘记录 <em id="rvCount">0 条</em></h2>
+        <div class="rv-list" id="rvList"></div>
+        <button class="mini" id="rvNew" style="margin-top:10px">写一条新复盘</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>面试复盘 <em id="rvState">新建</em></h2>
+        <div class="mj-cols">
+          <div><label>公司</label><input id="r_co" placeholder="字节跳动"></div>
+          <div><label>岗位</label><input id="r_role" placeholder="Java 后端"></div>
+          <div><label>日期</label><input id="r_date" placeholder="2026/11/10"></div>
+          <div><label>轮次</label>
+            <select id="r_round"><option>一面</option><option>二面</option><option>三面</option>
+              <option>HR 面</option><option>综合</option></select>
+          </div>
+          <div><label>整体自评</label>
+            <select id="r_rate"><option value="5">5 很顺</option><option value="4">4 基本答上</option>
+              <option value="3" selected>3 一般</option><option value="2">2 卡了几处</option>
+              <option value="1">1 崩了</option></select>
+          </div>
+          <div><label>关联投递</label><select id="r_app"><option value="">不关联</option></select></div>
+        </div>
+
+        <label>被问到的题（一行一题）</label>
+        <textarea id="r_qs" rows="6" placeholder="项目里最难的点是什么&#10;Redis 持久化怎么选"></textarea>
+
+        <label>答得不好的题（一行一题，会进错题本）</label>
+        <textarea id="r_bad" rows="4" placeholder="MySQL 索引失效的场景我漏了两个"></textarea>
+
+        <label>复盘总结</label>
+        <textarea id="r_note" rows="4" placeholder="哪块准备不足、面试官在意什么"></textarea>
+
+        <label>下一步动作</label>
+        <textarea id="r_todo" rows="2" placeholder="这周补完 B+ 树与索引下推，写一篇笔记"></textarea>
+
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
+          <button class="primary" id="r_save">保存复盘</button>
+          <button class="mini" id="r_del">删除</button>
+          <span class="hint" id="r_msg"></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>数据备份 <em>本地存储不保险</em></h2>
+        <div class="hint">
+          简历、面经、复盘、投递记录全在这台浏览器里。清缓存或换电脑就没了，建议每周导出一次。
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="mini" id="bkExport">导出全部数据</button>
+          <button class="mini" id="bkImport">导入备份</button>
+          <input type="file" id="bkFile" accept="application/json" style="display:none">
+          <span class="hint" id="bkMsg"></span>
         </div>
       </div>
     </div>
@@ -2525,10 +2625,12 @@ document.getElementById("viewNav").addEventListener("click", (e) => {
   const v = b.dataset.view;
   document.body.dataset.view = v;
   document.querySelectorAll("#viewNav button").forEach(x => x.classList.toggle("on", x === b));
-  document.getElementById("statusText").textContent = v === "mj"
-    ? "面经：搜、导入、自己写，都会汇总到高频考点"
+  document.getElementById("statusText").textContent =
+    v === "mj" ? "面经：搜、导入、自己写，都会汇总到高频考点"
+    : v === "rv" ? "复盘：预演、错题本、面试记录"
     : "左侧粘 JD，点简历模块在右侧填写";
   if (v === "mj") renderMj();
+  if (v === "rv") { renderRv(); renderWrong(); renderDrill(); }
 });
 
 /* 平台搜索 */
@@ -2827,6 +2929,272 @@ document.getElementById("appList").addEventListener("click", (e) => {
   }
 });
 
+/* ------------------------------------------------------------------
+   复盘：模拟预演 + 错题本 + 面试复盘 + 数据备份
+------------------------------------------------------------------ */
+const RV = {
+  list: LS.get("resume.reviews", []),
+  wrong: LS.get("resume.wrong", []),
+  editing: null,
+  msg: ""
+};
+
+const DR = { items: [], i: 0, known: 0, unknown: 0, revealed: false, running: false };
+
+/* ---------- 预演 ---------- */
+function drStart() {
+  const pool = allQuestions().filter(q => q.cat !== "ai");
+  if (!pool.length) return;
+  const picked = [];
+  const used = new Set();
+  while (picked.length < Math.min(8, pool.length)) {
+    const k = Math.floor(Math.random() * pool.length);
+    if (used.has(k)) continue;
+    used.add(k);
+    picked.push(pool[k]);
+  }
+  DR.items = picked;
+  DR.i = 0; DR.known = 0; DR.unknown = 0; DR.revealed = false; DR.running = true;
+  renderDrill();
+}
+
+function drAnswer(ok) {
+  const q = DR.items[DR.i];
+  if (!q) return;
+  if (ok) DR.known++;
+  else {
+    DR.unknown++;
+    addWrong(q.q, "预演");
+  }
+  DR.i++;
+  DR.revealed = false;
+  if (DR.i >= DR.items.length) {
+    DR.running = false;
+    const rate = Math.round(DR.known / DR.items.length * 100);
+    LS.set("resume.drills", [...(LS.get("resume.drills", [])), {
+      date: appDate(), total: DR.items.length, known: DR.known, rate
+    }]);
+  }
+  renderDrill();
+}
+
+function renderDrill() {
+  const box = document.getElementById("drillBox");
+  const state = document.getElementById("drillState");
+
+  if (!DR.running) {
+    const hist = LS.get("resume.drills", []);
+    const last = hist.slice(-3).reverse();
+    state.textContent = hist.length ? `练过 ${hist.length} 次` : "未开始";
+    box.innerHTML = `
+      <button class="primary" id="drStart">开始预演（8 题）</button>
+      ${last.length ? `<div class="hint" style="margin-top:10px">最近：` +
+        last.map(h => `${edEsc(h.date)} ${h.known}/${h.total}`).join("　") + `</div>` : ""}`;
+    const b = document.getElementById("drStart");
+    if (b) b.onclick = drStart;
+    return;
+  }
+
+  const q = DR.items[DR.i];
+  state.textContent = `${DR.i + 1} / ${DR.items.length}`;
+  box.innerHTML = `
+    <div class="drill-q">
+      <div class="drill-num">第 ${DR.i + 1} 题 · ${edEsc(q.tag || (q.cat === "proj" ? "项目" : "高频"))}</div>
+      <div class="drill-text">${edEsc(q.q)}</div>
+      ${DR.revealed ? `<div class="drill-a">${edEsc(q.a || "（这题没有参考答案）")}</div>` : ""}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      ${DR.revealed ? "" : `<button class="mini" id="drShow">看参考答案</button>`}
+      <button class="mini" id="drBad">答不上</button>
+      <button class="primary" id="drOk">答上来了</button>
+      <button class="mini" id="drStop">结束</button>
+    </div>`;
+
+  const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
+  bind("drShow", () => { DR.revealed = true; renderDrill(); });
+  bind("drOk", () => drAnswer(true));
+  bind("drBad", () => drAnswer(false));
+  bind("drStop", () => { DR.running = false; renderDrill(); });
+}
+
+/* ---------- 错题本 ---------- */
+function addWrong(q, from) {
+  const k = String(q).replace(/[\s，,。.]/g, "");
+  if (!k) return;
+  if (RV.wrong.some(w => String(w.q).replace(/[\s，,。.]/g, "") === k)) return;
+  RV.wrong.unshift({ id: "w" + Date.now() + Math.random().toString(16).slice(2, 6), q, from, done: false, date: appDate() });
+  LS.set("resume.wrong", RV.wrong);
+  renderWrong();
+}
+
+function renderWrong() {
+  const box = document.getElementById("wrongList");
+  const left = RV.wrong.filter(w => !w.done);
+  document.getElementById("wrongCount").textContent =
+    left.length ? `${left.length} 题待补` : "0 题";
+
+  if (!RV.wrong.length) {
+    box.innerHTML = `<div class="app-empty">还没有错题。预演标「答不上」或复盘里写「答得不好」都会自动进来。</div>`;
+    return;
+  }
+  box.innerHTML = RV.wrong.map(w => `
+    <div class="wrong-item${w.done ? " done" : ""}">
+      <label class="wrong-q">
+        <input type="checkbox" data-wdone="${w.id}"${w.done ? " checked" : ""}>
+        <span>${edEsc(w.q)}</span>
+      </label>
+      <div class="wrong-meta">${edEsc(w.from || "")} · ${edEsc(w.date || "")}
+        <a href="#" data-wdel="${w.id}">删除</a></div>
+    </div>`).join("");
+}
+
+/* ---------- 复盘 ---------- */
+function renderRv() {
+  const list = document.getElementById("rvList");
+  document.getElementById("rvCount").textContent = RV.list.length + " 条";
+  if (!RV.list.length) {
+    list.innerHTML = `<div class="app-empty">面试完花三分钟写一条，重点记「没答好的」和「下一步」。</div>`;
+  } else {
+    list.innerHTML = RV.list.map(r => `
+      <div class="app-item${RV.editing === r.id ? " on" : ""}" data-rid="${r.id}">
+        <div class="app-top">
+          <span class="app-co">${edEsc(r.co || "未填公司")}</span>
+          <span class="app-role">${edEsc(r.role || "")}</span>
+          <span class="app-score">${"★".repeat(Number(r.rate) || 3)}</span>
+        </div>
+        <div class="app-meta">${edEsc(r.date)} ${edEsc(r.round || "")} · ${(r.qs || []).length} 题被问到 · ${(r.bad || []).length} 题没答好</div>
+      </div>`).join("");
+  }
+
+  const cur = RV.list.find(x => x.id === RV.editing) || null;
+  document.getElementById("rvState").textContent = cur ? "编辑中" : "新建";
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v == null ? "" : v; };
+  set("r_co", cur ? cur.co : "");
+  set("r_role", cur ? cur.role : "");
+  set("r_date", cur ? cur.date : appDate());
+  set("r_round", cur ? cur.round : "一面");
+  set("r_rate", cur ? String(cur.rate || 3) : "3");
+  set("r_qs", cur ? (cur.qs || []).join("\n") : "");
+  set("r_bad", cur ? (cur.bad || []).join("\n") : "");
+  set("r_note", cur ? cur.note : "");
+  set("r_todo", cur ? cur.todo : "");
+
+  const appSel = document.getElementById("r_app");
+  appSel.innerHTML = `<option value="">不关联</option>` + state.apps.map(a =>
+    `<option value="${a.id}">${edEsc(a.co || "未填公司")} · ${edEsc(a.role || "")} · ${edEsc(a.date)}</option>`).join("");
+  appSel.value = cur && cur.appId ? cur.appId : "";
+  document.getElementById("r_msg").textContent = RV.msg;
+}
+
+function saveRv() {
+  const lines = id => (document.getElementById(id).value || "")
+    .split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const co = (document.getElementById("r_co").value || "").trim();
+  const role = (document.getElementById("r_role").value || "").trim();
+  const qs = lines("r_qs");
+  const bad = lines("r_bad");
+  if (!co && !role && !qs.length && !bad.length) {
+    document.getElementById("r_msg").textContent = "至少填公司、岗位或题目";
+    return;
+  }
+  const data = {
+    id: RV.editing || ("rv" + Date.now()),
+    co, role, qs, bad,
+    date: (document.getElementById("r_date").value || "").trim(),
+    round: document.getElementById("r_round").value,
+    rate: Number(document.getElementById("r_rate").value) || 3,
+    appId: document.getElementById("r_app").value || "",
+    note: (document.getElementById("r_note").value || "").trim(),
+    todo: (document.getElementById("r_todo").value || "").trim()
+  };
+  const i = RV.list.findIndex(x => x.id === data.id);
+  if (i >= 0) RV.list[i] = data; else RV.list.unshift(data);
+  RV.editing = data.id;
+  LS.set("resume.reviews", RV.list);
+  bad.forEach(q => addWrong(q, "复盘"));
+  RV.msg = "已保存" + (bad.length ? `，${bad.length} 题进错题本` : "");
+  renderRv();
+  setTimeout(() => { RV.msg = ""; const el = document.getElementById("r_msg"); if (el) el.textContent = ""; }, 2000);
+}
+
+/* ---------- 事件 ---------- */
+document.getElementById("rvList").addEventListener("click", (e) => {
+  const it = e.target.closest("[data-rid]");
+  if (!it) return;
+  RV.editing = it.dataset.rid;
+  RV.msg = "";
+  renderRv();
+});
+document.getElementById("rvNew").onclick = () => { RV.editing = null; RV.msg = ""; renderRv(); };
+document.getElementById("r_save").onclick = saveRv;
+document.getElementById("r_del").onclick = () => {
+  if (!RV.editing) { document.getElementById("r_msg").textContent = "还没保存过"; return; }
+  if (!confirm("删除这条复盘？")) return;
+  RV.list = RV.list.filter(x => x.id !== RV.editing);
+  RV.editing = null;
+  LS.set("resume.reviews", RV.list);
+  renderRv();
+};
+
+document.getElementById("wrongList").addEventListener("click", (e) => {
+  const chk = e.target.closest("[data-wdone]");
+  if (chk) {
+    const w = RV.wrong.find(x => x.id === chk.dataset.wdone);
+    if (w) { w.done = chk.checked; LS.set("resume.wrong", RV.wrong); renderWrong(); }
+    return;
+  }
+  const del = e.target.closest("[data-wdel]");
+  if (del) {
+    e.preventDefault();
+    RV.wrong = RV.wrong.filter(x => x.id !== del.dataset.wdel);
+    LS.set("resume.wrong", RV.wrong);
+    renderWrong();
+  }
+});
+
+/* ---------- 备份 ---------- */
+document.getElementById("bkExport").onclick = () => {
+  const data = {};
+  Object.keys(localStorage).forEach(k => {
+    if (k.indexOf("resume.") === 0) {
+      try { data[k] = JSON.parse(localStorage.getItem(k)); }
+      catch (_) { data[k] = localStorage.getItem(k); }
+    }
+  });
+  const blob = new Blob([JSON.stringify({ v: 1, at: new Date().toISOString(), data }, null, 2)],
+    { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `求职工作台备份-${appDate().replace(/\//g, "")}.json`;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  document.getElementById("bkMsg").textContent = "已导出，建议放进网盘或发自己邮箱";
+};
+
+document.getElementById("bkImport").onclick = () => document.getElementById("bkFile").click();
+document.getElementById("bkFile").addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(reader.result);
+      const data = obj && obj.data ? obj.data : obj;
+      if (!data || typeof data !== "object") throw new Error("格式不对");
+      if (!confirm("导入会覆盖当前所有本地数据（简历、面经、复盘、投递记录），继续？")) return;
+      Object.keys(data).forEach(k => {
+        if (k.indexOf("resume.") !== 0) return;
+        localStorage.setItem(k, JSON.stringify(data[k]));
+      });
+      location.reload();
+    } catch (err) {
+      document.getElementById("bkMsg").textContent = "导入失败：" + err.message;
+    }
+  };
+  reader.readAsText(f);
+  e.target.value = "";
+});
+
 /* 初始化：上次填过的 JD、选中的项目都会恢复，不用重新粘一遍。
    没有 JD 时先放一套通用组合，粘上 JD 后整页会被重算。 */
 updateAiState();
@@ -2847,6 +3215,9 @@ if (state.jd) {
 state.skills = composeSkills(state.selected, currentOrder());
 renderTodo();
 renderApps();
+renderRv();
+renderWrong();
+renderDrill();
 renderJdChips();
 renderProjects();
 renderPaper();
