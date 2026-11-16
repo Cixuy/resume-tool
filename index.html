@@ -421,6 +421,7 @@ const LS = {
 const state = {
   photo: localStorage.getItem("resume.photo") || null,
   roleId: LS.get("resume.role", "java-backend"),
+  intentSource: LS.get("resume.intentSource", "preset"),
   profile: LS.get("resume.profile", {}),
   overrides: LS.get("resume.overrides", {}),
   selected: [],
@@ -528,6 +529,33 @@ function currentOrder() {
   return r && r.order ? r.order : null;
 }
 
+// 求职意向与岗位预设的唯一入口：改一边，另一边跟着变
+function setIntent(text, source, roleId) {
+  PROFILE.intent = text;
+  state.intentSource = source;
+  state.roleId = roleId;
+  if (source !== "custom") {
+    state.profile.intent = text;
+    saveProfile();
+  }
+  LS.set("resume.intentSource", source);
+  LS.set("resume.role", roleId || "");
+  renderRoles();
+  renderPaper();
+}
+
+// 由岗位名反查对应的预设按钮
+function roleByIntent(intent) {
+  const t = (intent || "").toLowerCase();
+  if (t.includes("测试")) return "test-dev";
+  if (t.includes("agent") || t.includes("智能体")) return "ai-agent";
+  if (t.includes("c++")) return "cpp-systems";
+  if (t.includes("go")) return "go-cloud";
+  if (t.includes("服务器") || t.includes("运维")) return "server-ops";
+  if (t.includes("java") || t.includes("后端")) return "java-backend";
+  return null;
+}
+
 function renderRoles() {
   const box = document.getElementById("roleList");
   box.innerHTML = "";
@@ -543,13 +571,11 @@ function renderRoles() {
 function applyRole(roleId) {
   const role = ROLE_PRESETS.find(r => r.id === roleId);
   if (!role) return;
-  state.roleId = roleId;
-  LS.set("resume.role", roleId);
   state.touched = false;
   state.selected = role.projects.filter(id => PROJECTS.some(p => p.id === id));
-  if (!state.jd) { PROFILE.intent = role.intent; state.profile.intent = role.intent; }
-  state.skills = composeSkills(state.selected, currentOrder());
-  renderRoles(); renderProjects(); renderPaper();
+  state.skills = composeSkills(state.selected, role.order || null);
+  renderProjects();
+  setIntent(role.intent, "preset", roleId);   // 点预设一定改写意向，不再看 JD 是否为空
 }
 
 function renderProjects() {
@@ -682,6 +708,19 @@ document.addEventListener("input", (e) => {
   const k = el.dataset.k;
   if (!k) return;
   const val = el.innerText.trim();
+
+  if (k === "intent") {
+    // 手动改过之后不再跟随预设，左侧高亮取消
+    state.intentSource = "custom";
+    state.roleId = null;
+    LS.set("resume.intentSource", "custom");
+    LS.set("resume.role", "");
+    renderRoles();
+    PROFILE.intent = val;
+    state.profile.intent = val;
+    saveProfile();
+    return;
+  }
   if (k.indexOf("edu.") === 0) {
     PROFILE.edu[k.slice(4)] = val;
     state.profile.edu = PROFILE.edu;
@@ -854,12 +893,13 @@ jdEl.addEventListener("input", () => {
     state.aiScores = null;
     renderJdChips();
 
-    PROFILE.intent = inferIntent(state.jd);
-    state.profile.intent = PROFILE.intent;
-
     if (!state.touched) autoPick(3);
     state.skills = composeSkills(state.selected, currentOrder());
-    renderProjects(); renderPaper();
+    renderProjects();
+
+    // 贴 JD 是更晚的动作，意向以 JD 为准，并把左侧高亮切到对应预设
+    const guessed = inferIntent(state.jd);
+    setIntent(guessed, "jd", roleByIntent(guessed));
   }, 250);
 });
 
@@ -934,7 +974,16 @@ document.getElementById("btnPdf").onclick = () => {
 
 /* 初始化 */
 updateAiState();
-applyRole(state.roleId);
+if (state.intentSource === "custom" && PROFILE.intent) {
+  // 用户手改过意向：保留文案，左侧不高亮
+  state.roleId = null;
+  const role = ROLE_PRESETS.find(r => r.id === LS.get("resume.role", "")) || ROLE_PRESETS[0];
+  state.selected = role.projects.slice();
+  state.skills = composeSkills(state.selected, role.order);
+  renderRoles(); renderProjects(); renderPaper();
+} else {
+  applyRole(ROLE_PRESETS.some(r => r.id === state.roleId) ? state.roleId : ROLE_PRESETS[0].id);
+}
 renderJdChips();
 </script>
 </body>
