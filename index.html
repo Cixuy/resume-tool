@@ -976,8 +976,8 @@ const PROJECTS = [
     stack: "C++17 + 约束随机 + 参考模型 + 功能覆盖率",
     skills: [
       ["语言", "C++17"], ["测试", "约束随机激励（CRV）"],
-      ["测试", "参考模型与 scoreboard"], ["测试", "功能覆盖率（17 个覆盖点）"],
-      ["测试", "错误注入与回归"], ["工程", "波形与报告可视化"]
+      ["测试", "参考模型与 scoreboard"], ["测试", "功能覆盖率"],
+      ["测试", "故障注入与回归"], ["工程", "波形与报告可视化"]
     ],
     desc: "不依赖 EDA 的 mini DV 平台：被测逻辑是同步 FIFO，按 UVM 分层复现生成器、驱动器、参考模型、scoreboard 与覆盖率。",
     bullets: [
@@ -985,6 +985,53 @@ const PROJECTS = [
       "<b>覆盖率驱动</b>：17 个覆盖点含交叉与边界（满写、空读、背靠背、指针回绕）；随机 20000 拍达 94.1%，唯一缺口是被约束排除的空读场景，补 3 个定向用例后到 100%",
       "<b>平台有效性</b>：注入「满写不忽略」的 bug，3000 拍内第 95 拍即被 scoreboard 捕获（cnt=9 超过 depth=8），共报出 2819 处失配",
       "<b>可视化</b>：导出逐拍信号生成单文件报告，含波形（失配拍标红）、水位曲线与覆盖率网格，鼠标悬停可看该拍全部信号"
+    ]
+  },
+  {
+    id: "mini-rtos",
+    url: "https://github.com/Cixuy/mini-rtos",
+    name: "单核抢占式 RTOS 内核（mini-rtos）",
+    role: "独立开发", period: "2026/11 - 2026/11",
+    direction: ["embed", "cpp", "chip"], distinct: 1.0,
+    tags: ["rtos", "嵌入式", "freertos", "实时操作系统", "调度", "抢占", "优先级", "优先级反转",
+           "优先级继承", "互斥量", "信号量", "tick", "中断", "mcu", "单片机", "cortex", "裸机",
+           "c", "c++", "trace", "波形", "wcet"],
+    stack: "C11 + pthread + tick 级 trace + Canvas 可视化",
+    skills: [
+      ["语言", "C11"], ["系统", "抢占式调度与 TCB 管理"],
+      ["系统", "互斥量与优先级继承"], ["系统", "tick 驱动与定时阻塞"],
+      ["性能", "最坏响应时间（WCET）分析"], ["工程", "tick 级 trace 与甘特图"]
+    ],
+    desc: "在 PC 上实现单核抢占式调度内核，用三任务一互斥量复现优先级反转，给出开/关优先级继承的量化对比与 tick 级回放。",
+    bullets: [
+      "<b>调度内核</b>：8 级优先级 TCB 与就绪队列，tick 驱动抢占；任务栈由线程承载、全局锁保证单核语义，任一时刻只有一个任务能进临界区",
+      "<b>优先级继承</b>：阻塞时把持锁者抬到等待者优先级、释放时还原 base_prio；并定位了「用等待者优先级算还原值会让优先级永久居高不下」这一实现陷阱",
+      "<b>量化收益</b>：HIGH 最坏阻塞 205 → 57 tick（3.6 倍），MED 插队 148 → 0 tick，临界区墙钟 210 → 62 tick；两种配置下三任务 CPU 占用均为 6/151/60，证明反转只改变顺序、不改变总工作量",
+      "<b>可观测性</b>：导出逐 tick 的 CPU 归属与阻塞/继承/唤醒事件流，自写渲染脚本生成单文件 HTML（甘特图 + 优先级阶梯图）；busy() 由 tick 驱动而非 sleep，连跑 5 次指标完全一致"
+    ]
+  },
+  {
+    id: "axi-vip",
+    url: "https://github.com/Cixuy/axi-vip",
+    name: "AXI4 / APB 总线验证平台（axi-vip）",
+    role: "独立开发", period: "2026/11 - 2026/11",
+    direction: ["chip", "test", "cpp"], distinct: 1.0,
+    tags: ["axi", "apb", "amba", "总线", "验证", "dv", "vip", "断言", "checker", "scoreboard",
+           "覆盖率", "约束随机", "crv", "uvm", "握手", "时序", "芯片", "数字前端", "ip 验证",
+           "波形", "c++", "协议验证", "仿真"],
+    stack: "C++17 + 周期级模型 + 约束随机 + 协议断言 + 功能覆盖率",
+    skills: [
+      ["语言", "C++17"], ["测试", "AXI4 / APB 协议断言（14 条）"],
+      ["测试", "约束随机激励（CRV）"], ["测试", "参考模型与 scoreboard"],
+      ["测试", "功能覆盖率"], ["测试", "故障注入与回归"],
+      ["工程", "波形与报告可视化"]
+    ],
+    desc: "不依赖 EDA 的 AMBA 验证平台：被测对象是 AXI4 从设备与 AXI-Lite→APB 桥，外面配完整的 VIP 与断言。",
+    bullets: [
+      "<b>协议建模</b>：AXI4（AW/W/B + AR/R，INCR 突发）与 AXI-Lite→APB 桥的周期级模型，地址三区间返回 OKAY/SLVERR/DECERR，全部信号握手真实跑出来而非查表",
+      "<b>协议断言</b>：14 条规则覆盖 VALID/READY 稳定性、LAST 位置、W 拍数、4KB 边界、APB SETUP/ACCESS 两段式与 PADDR 全程稳定；checker 只看总线，不读 DUT 内部",
+      "<b>覆盖率驱动</b>：37 个覆盖点（方向×大小、方向×响应、突发长度、通道停顿、WSTRB、APB 等待态），随机 220 笔达 91.9%，补 12 条定向用例到 100%；参考模型独立维护存储，566 拍比对 0 失配",
+      "<b>平台有效性</b>：注入 6 类时序 bug，全部在 1–251 拍内被<b>对应</b>断言捕获（B 早于 WLAST、RLAST 错位、等待期改数据、APB 改地址、提前撤 PSEL、无 PENABLE 就 PREADY），固定种子三次回归结果一致"
     ]
   },
   {
@@ -1046,6 +1093,7 @@ const DIR_ORDER = {
   ops:      ["语言", "服务治理", "可观测", "存储", "系统", "工程"],
   chip:     ["语言", "测试", "性能", "系统", "工程", "存储"],
   cpp:      ["语言", "系统", "性能", "工程", "存储", "框架"],
+  embed:    ["语言", "系统", "性能", "工程", "测试", "存储"],
   test:     ["语言", "测试", "工程", "框架", "存储"],
   frontend: ["语言", "前端", "框架", "工程", "存储"]
 };
@@ -1063,7 +1111,12 @@ const DIRECTIONS = {
   frontend: ["vue", "react", "前端", "javascript", "typescript", "canvas"],
   ops: ["运维", "sre", "devops", "服务器", "监控", "告警", "巡检", "可观测", "故障", "自愈", "发布部署"],
   chip: ["芯片", "数字前端", "验证", "覆盖率", "uvm", "rtl", "fpga", "soc", "npu", "gpu",
-         "算子", "推理引擎", "量化", "流水线", "时序", "硬件", "硅", "版图"]
+         "算子", "推理引擎", "量化", "流水线", "时序", "硬件", "硅", "版图",
+         "axi", "apb", "amba", "总线", "vip", "断言", "scoreboard", "参考模型",
+         "约束随机", "crv", "握手", "协议验证", "仿真"],
+  embed: ["嵌入式", "rtos", "freertos", "ucos", "mcu", "单片机", "实时操作系统", "中断",
+          "驱动", "bsp", "stm32", "cortex", "裸机", "低功耗", "i2c", "spi", "uart", "can 总线",
+          "lwip", "modbus", "mqtt", "优先级反转", "信号量", "任务调度", "内存池"]
 };
 
 const SKILL_LABEL = {
@@ -2154,7 +2207,8 @@ function renderJdChips() {
   const box = document.getElementById("jdChips");
   box.innerHTML = "";
   const labels = { ai: "AI/Agent", backend: "后端", go: "Go/云原生",
-                   cpp: "C++/底层", test: "测试", frontend: "前端", ops: "运维/服务器", chip: "芯片/验证" };
+                   cpp: "C++/底层", test: "测试", frontend: "前端", ops: "运维/服务器",
+                   chip: "芯片/验证", embed: "嵌入式/RTOS" };
   let any = false;
   for (const [dir, n] of Object.entries(state.analysis.dirScore || {})) {
     if (!n) continue;
